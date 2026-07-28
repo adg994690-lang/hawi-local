@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>HAWI — Order Your Ethiopian Favourites</title>
-    <meta name="description" content="Scan, browse and order authentic Ethiopian dishes at HAWI. Pay securely with Telebirr and get an instant receipt." />
+    <meta name="description" content="Scan, browse and order authentic Ethiopian dishes at HAWI. Place your order directly to the kitchen." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet" />
@@ -76,7 +76,7 @@
           <div class="absolute -left-8 bottom--8 w-32 h-32 rounded-full bg-white/10 float-slow" style="animation-delay:1.4s"></div>
           <p class="text-white/85 text-sm font-semibold tracking-wide uppercase">Fresh from our kitchen</p>
           <h2 class="mt-2 text-3xl sm:text-5xl max-w-xl leading-tight">Authentic Ethiopian flavours, ordered from your table.</h2>
-          <p class="mt-3 text-white/85 max-w-lg">Browse today's menu, build your order and pay instantly with Telebirr.</p>
+          <p class="mt-3 text-white/85 max-w-lg">Browse today's menu, build your order and send it straight to the kitchen.</p>
         </div>
       </div>
     </header>
@@ -96,45 +96,11 @@
       </div>
       <div id="cartItems" class="flex-1 overflow-y-auto p-5 space-y-3"></div>
       <div class="border-t border-cool p-5 space-y-3">
-        <div class="rounded-xl border border-cool bg-cloud p-4 space-y-3">
-          <div>
-            <p class="text-xs font-bold uppercase tracking-wide text-steel mb-2">Choose your day</p>
-            <div id="dayChips" class="flex flex-wrap gap-2"></div>
-          </div>
-          <div>
-            <p class="text-xs font-bold uppercase tracking-wide text-steel mb-2">Choose your time</p>
-            <div id="timeChips" class="flex flex-wrap gap-2"></div>
-          </div>
-          <p id="schedSummary" class="text-xs text-steel"></p>
-        </div>
+        <p class="text-xs text-steel text-center">Your order goes straight to the kitchen — pay the staff when you arrive.</p>
         <div class="flex items-center justify-between text-sm text-steel"><span>Total</span><span id="cartTotal" class="text-xl font-display text-midnight">0.00 ETB</span></div>
         <button id="placeOrderBtn" class="brand-grad w-full text-white font-bold rounded-xl py-3.5 disabled:opacity-40">Place Order</button>
       </div>
     </aside>
-
-    <!-- PAYMENT MODAL -->
-    <div id="payModal" class="hidden fixed inset-0 z-[60] bg-midnight/50 p-4 overflow-y-auto">
-      <div class="mx-auto my-8 max-w-md bg-white rounded-2xl border border-cool p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg">Pay with Telebirr</h3>
-          <button id="payClose" class="w-9 h-9 rounded-xl border border-cool grid place-items-center"><iconify-icon icon="lucide:x"></iconify-icon></button>
-        </div>
-        <div id="payBody" class="space-y-4"></div>
-      </div>
-    </div>
-
-    <!-- RECEIPT MODAL -->
-    <div id="receiptModal" class="hidden fixed inset-0 z-[70] bg-midnight/60 p-4 overflow-y-auto">
-      <div class="mx-auto my-8 max-w-md bg-white rounded-2xl border border-cool p-6 text-center">
-        <div class="brand-grad w-14 h-14 rounded-2xl grid place-items-center text-white mx-auto mb-3 text-2xl"><iconify-icon icon="lucide:check"></iconify-icon></div>
-        <h3 class="text-xl">Order received!</h3>
-        <p class="text-sm text-steel mt-1">We're reviewing your payment proof now.</p>
-        <p id="receiptWhen" class="mt-2 text-sm font-semibold brand-text"></p>
-        <p class="mt-2 rounded-xl bg-cloud border border-cool p-3 text-xs text-steel">Please <strong class="text-charcoal">keep this ticket</strong> — download or screenshot it and show it to the staff when you arrive. It is your proof of order and payment.</p>
-        <canvas id="receiptCanvas" width="640" height="900" class="mt-4 w-full rounded-xl border border-cool"></canvas>
-        <button id="downloadReceipt" class="brand-grad w-full text-white font-bold rounded-xl py-3.5 mt-4">Download Receipt</button>
-      </div>
-    </div>
 
     <div id="toasts" class="fixed z-[90] bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"></div>
 
@@ -169,7 +135,7 @@
       // ---------- state ----------
       const params = new URLSearchParams(location.search);
       const TABLE = params.get("table") || "";
-      let MENU = [], FILTER = "All", CART = {}, LAST = null;
+      let MENU = [], FILTER = "All", CART = {};
 
       if (TABLE) {
         const b = $("#tableBadge");
@@ -256,53 +222,13 @@
       const cartList = () => Object.values(CART);
       const cartTotal = () => cartList().reduce((s, i) => s + i.price * i.qty, 0);
 
-      // ---------- scheduling ----------
-      const SCHED = { date: null, dateLabel: "", time: null };
-      const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      const TIME_SLOTS = ["ASAP", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00"];
-      const chipCls = (on) => "rounded-full px-3 py-1.5 text-xs font-semibold border transition " + (on ? "brand-grad text-white border-transparent" : "bg-white border-cool text-charcoal hover:border-primary");
-
-      function dayOptions() {
-        const out = [];
-        for (let i = 0; i < 5; i++) {
-          const d = new Date();
-          d.setHours(12, 0, 0, 0);
-          d.setDate(d.getDate() + i);
-          const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-          const label = i === 0 ? "Today" : i === 1 ? "Tomorrow" : DAY_NAMES[d.getDay()];
-          out.push({ iso, label, sub: d.toLocaleDateString(undefined, { day: "numeric", month: "short" }) });
-        }
-        return out;
-      }
-      const DAYS = dayOptions();
-
-      function schedLabel() {
-        if (!SCHED.date || !SCHED.time) return "";
-        const d = DAYS.find((x) => x.iso === SCHED.date);
-        const day = d ? `${d.label} (${d.sub})` : SCHED.date;
-        return SCHED.time === "ASAP" ? `${day} — as soon as possible` : `${day} at ${SCHED.time}`;
-      }
-
-      function renderScheduler() {
-        $("#dayChips").innerHTML = DAYS.map((d) =>
-          `<button data-day="${d.iso}" class="${chipCls(SCHED.date === d.iso)}">${esc(d.label)} · ${esc(d.sub)}</button>`).join("");
-        $("#timeChips").innerHTML = TIME_SLOTS.map((t) =>
-          `<button data-time="${esc(t)}" class="${chipCls(SCHED.time === t)}">${esc(t)}</button>`).join("");
-        $("#dayChips").querySelectorAll("[data-day]").forEach((b) => b.onclick = () => { SCHED.date = b.dataset.day; renderScheduler(); renderCart(); });
-        $("#timeChips").querySelectorAll("[data-time]").forEach((b) => b.onclick = () => { SCHED.time = b.dataset.time; renderScheduler(); renderCart(); });
-        const done = SCHED.date && SCHED.time;
-        $("#schedSummary").textContent = done
-          ? `We'll serve your order: ${schedLabel()}`
-          : "Pick a day and a time so the kitchen knows when to serve you.";
-      }
-
       function renderCart() {
         const items = cartList();
         const c = $("#cartCount");
         const count = items.reduce((s, i) => s + i.qty, 0);
         c.textContent = count; c.classList.toggle("hidden", count === 0);
         $("#cartTotal").textContent = money(cartTotal());
-        $("#placeOrderBtn").disabled = items.length === 0 || !SCHED.date || !SCHED.time;
+        $("#placeOrderBtn").disabled = items.length === 0;
         $("#cartItems").innerHTML = items.length
           ? items.map((i) => `<div class="card p-4 flex items-center gap-3">
               <div class="flex-1"><p class="font-semibold text-sm">${esc(i.name)}</p><p class="text-xs text-steel">${money(i.price)} each</p></div>
@@ -326,94 +252,18 @@
       $("#cartClose").onclick = () => openCart(false);
       $("#cartOverlay").onclick = () => openCart(false);
 
-      // ---------- payment ----------
-      let PROOF_FILE = null;
-
+      // ---------- place order directly (no payment, no scheduling) ----------
       $("#placeOrderBtn").onclick = async () => {
-        if (!cartList().length) return;
-        if (!SCHED.date || !SCHED.time) { toast("Please choose the day and time first", "error"); return; }
-        PROOF_FILE = null;
-        openCart(false);
-        $("#payModal").classList.remove("hidden");
-        $("#payBody").innerHTML = `<div class="py-10 text-center text-steel"><iconify-icon icon="lucide:loader-2" class="spin text-2xl"></iconify-icon><p class="text-sm mt-2">Loading payment details…</p></div>`;
-        let s = null;
+        const items = cartList();
+        if (!items.length) return;
+        const btn = $("#placeOrderBtn");
+        btn.disabled = true; btn.textContent = "Sending order…";
         try {
-          const res = await fetch(`${SUPABASE_URL}/rest/v1/payment_settings?select=*&id=eq.1`, { headers: H });
-          if (!res.ok) throw new Error(await describeFailure(res, "Could not load payment details"));
-          s = (await res.json())[0] || {};
-        } catch (err) {
-          $("#payBody").innerHTML = `<div class="rounded-xl bg-primary/10 text-primary text-sm p-4">${esc(err.message)}</div>`;
-          return;
-        }
-        renderPayBody(s);
-      };
-
-      function renderPayBody(s) {
-        $("#payBody").innerHTML = `
-          <div class="card p-4 text-center">
-            ${s.telebirr_qr_url
-              ? `<img src="${esc(s.telebirr_qr_url)}" alt="Telebirr payment QR code" class="mx-auto w-52 h-52 object-contain rounded-xl" onerror="this.replaceWith(Object.assign(document.createElement('p'),{className:'text-sm text-steel py-16',textContent:'Payment QR image could not be displayed. Please ask staff.'}))">`
-              : `<p class="text-sm text-steel py-16">The restaurant hasn't uploaded a Telebirr QR yet. Please ask a staff member.</p>`}
-            ${s.telebirr_name ? `<p class="mt-3 text-sm font-semibold">${esc(s.telebirr_name)}</p>` : ""}
-            ${s.telebirr_number ? `<p class="text-sm text-steel">${esc(s.telebirr_number)}</p>` : ""}
-          </div>
-          <div class="rounded-xl bg-cloud border border-cool p-4 flex items-center justify-between">
-            <span class="text-sm text-steel">Amount due</span><span class="font-display text-xl brand-text">${money(cartTotal())}</span>
-          </div>
-          <div class="rounded-xl bg-cloud border border-cool p-4 flex items-center justify-between gap-3">
-            <span class="text-sm text-steel">Serve time</span><span class="text-sm font-semibold text-right">${esc(schedLabel())}</span>
-          </div>
-          <div>
-            <label class="block text-sm font-semibold mb-1.5">Upload your Telebirr payment screenshot</label>
-            <input id="proofInput" type="file" accept="image/*" class="block w-full text-sm rounded-xl border border-cool p-2.5" />
-            <div id="proofPreview" class="mt-3"></div>
-          </div>
-          <button id="submitOrder" disabled class="brand-grad w-full text-white font-bold rounded-xl py-3.5 disabled:opacity-40">Submit Order &amp; Proof of Payment</button>
-          <p id="payError" class="hidden text-sm text-primary"></p>`;
-
-        $("#proofInput").onchange = (e) => {
-          const f = e.target.files[0];
-          PROOF_FILE = f || null;
-          $("#submitOrder").disabled = !f;
-          $("#proofPreview").innerHTML = "";
-          if (f) {
-            const img = document.createElement("img");
-            img.src = URL.createObjectURL(f);
-            img.alt = "Payment screenshot preview";
-            img.className = "w-full max-h-56 object-contain rounded-xl border border-cool";
-            $("#proofPreview").appendChild(img);
-          }
-        };
-        $("#submitOrder").onclick = submitOrder;
-      }
-
-      $("#payClose").onclick = () => $("#payModal").classList.add("hidden");
-
-      async function submitOrder() {
-        const btn = $("#submitOrder"), err = $("#payError");
-        if (!PROOF_FILE) return;
-        btn.disabled = true; btn.textContent = "Uploading…"; err.classList.add("hidden");
-        try {
-          const ext = (PROOF_FILE.name.split(".").pop() || "png").toLowerCase();
-          const path = `proof-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-          const up = await fetch(`${SUPABASE_URL}/storage/v1/object/payment-proofs/${path}`, {
-            method: "POST",
-            headers: { ...H, "Content-Type": PROOF_FILE.type || "application/octet-stream" },
-            body: PROOF_FILE,
-          });
-          if (!up.ok) throw new Error(await describeFailure(up, "Could not upload your payment screenshot"));
-          const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/payment-proofs/${path}`;
-
           const payload = {
             table_number: TABLE || "Walk-in",
-            items: cartList(),
+            items: items,
             total_amount: Number(cartTotal().toFixed(2)),
-            status: "pending_review",
-            payment_method: "telebirr",
-            payment_screenshot_url: publicUrl,
-            scheduled_date: SCHED.date,
-            scheduled_time: SCHED.time,
-            scheduled_label: schedLabel(),
+            status: "received",
           };
           const ins = await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
             method: "POST",
@@ -421,85 +271,19 @@
             body: JSON.stringify(payload),
           });
           if (!ins.ok) throw new Error(await describeFailure(ins, "Could not submit your order"));
-          const row = (await ins.json())[0];
-          LAST = { ...payload, id: row?.id || "—", created_at: row?.created_at || new Date().toISOString() };
-        } catch (e2) {
-          err.textContent = e2.message || "Network request failed while submitting your order.";
-          err.classList.remove("hidden");
-          btn.disabled = false; btn.textContent = "Submit Order & Proof of Payment";
-          toast("Order could not be submitted", "error");
+        } catch (err) {
+          btn.disabled = false; btn.textContent = "Place Order";
+          toast(err.message || "Order could not be submitted", "error");
           return;
         }
-        btn.disabled = false; btn.textContent = "Submit Order & Proof of Payment";
-        $("#payModal").classList.add("hidden");
-        drawReceipt(LAST);
-        $("#receiptWhen").textContent = LAST.scheduled_label ? `Serve time: ${LAST.scheduled_label}` : "";
-        $("#receiptModal").classList.remove("hidden");
-        toast("Order placed — thank you!");
-      }
-
-      function drawReceipt(o) {
-        const c = $("#receiptCanvas"), g = c.getContext("2d");
-        g.fillStyle = "#FFFFFF"; g.fillRect(0, 0, c.width, c.height);
-        const grad = g.createLinearGradient(0, 0, c.width, 0);
-        grad.addColorStop(0, "#E43D30"); grad.addColorStop(0.5, "#F15A3C"); grad.addColorStop(1, "#F97316");
-        g.fillStyle = grad; g.fillRect(0, 0, c.width, 120);
-        g.fillStyle = "#FFFFFF"; g.font = "800 40px 'Plus Jakarta Sans', sans-serif";
-        g.fillText("HAWI", 40, 60); g.font = "500 18px Inter, sans-serif";
-        g.fillText("Ethiopian Kitchen — Order Receipt", 40, 92);
-
-        let y = 175;
-        g.fillStyle = "#777777"; g.font = "500 16px Inter, sans-serif";
-        g.fillText("Order ID", 40, y); g.fillText("Table", 40, y + 34); g.fillText("Placed", 40, y + 68);
-        g.fillText("Serve time", 40, y + 102);
-        g.fillStyle = "#111111"; g.font = "600 16px Inter, sans-serif";
-        g.fillText(String(o.id).slice(0, 28), 190, y); g.fillText(String(o.table_number), 190, y + 34);
-        g.fillText(new Date(o.created_at).toLocaleString(), 190, y + 68);
-        g.fillStyle = "#E43D30"; g.font = "700 16px Inter, sans-serif";
-        g.fillText(String(o.scheduled_label || "As soon as possible").slice(0, 34), 190, y + 102);
-
-        y += 150;
-        g.strokeStyle = "#E5E7EB"; g.beginPath(); g.moveTo(40, y); g.lineTo(600, y); g.stroke();
-        y += 36;
-        g.fillStyle = "#444444"; g.font = "700 18px 'Plus Jakarta Sans', sans-serif"; g.fillText("Items", 40, y);
-        y += 30;
-        g.font = "500 16px Inter, sans-serif";
-        o.items.forEach((i) => {
-          g.fillStyle = "#111111"; g.fillText(`${i.qty} x ${String(i.name).slice(0, 30)}`, 40, y);
-          g.fillStyle = "#444444";
-          const t = (i.price * i.qty).toFixed(2) + " ETB";
-          g.fillText(t, 600 - g.measureText(t).width, y);
-          y += 30;
-        });
-        y += 12;
-        g.strokeStyle = "#E5E7EB"; g.beginPath(); g.moveTo(40, y); g.lineTo(600, y); g.stroke();
-        y += 44;
-        g.fillStyle = "#111111"; g.font = "800 24px 'Plus Jakarta Sans', sans-serif"; g.fillText("Total", 40, y);
-        const tt = Number(o.total_amount).toFixed(2) + " ETB";
-        g.fillStyle = "#E43D30"; g.fillText(tt, 600 - g.measureText(tt).width, y);
-        y += 50;
-        g.fillStyle = "#777777"; g.font = "500 15px Inter, sans-serif";
-        g.fillText("Paid via Telebirr — awaiting confirmation.", 40, y);
-        g.fillStyle = "#111111"; g.font = "700 15px Inter, sans-serif";
-        g.fillText("Keep this ticket — show it to our staff on arrival.", 40, y + 26);
-        g.fillStyle = "#777777"; g.font = "500 15px Inter, sans-serif";
-        g.fillText("Thank you for dining with HAWI!", 40, y + 52);
-      }
-
-      $("#downloadReceipt").onclick = () => {
-        const url = $("#receiptCanvas").toDataURL("image/png");
-        const a = document.createElement("a");
-        a.href = url; a.download = `hawi-receipt-${String(LAST?.id || Date.now()).slice(0, 8)}.png`;
-        document.body.appendChild(a); a.click(); a.remove();
-        CART = {}; LAST = null; PROOF_FILE = null;
-        SCHED.date = null; SCHED.time = null; renderScheduler();
+        btn.disabled = false; btn.textContent = "Place Order";
+        CART = {};
+        openCart(false);
         renderCart(); renderGrid();
-        $("#receiptModal").classList.add("hidden");
-        toast("Receipt saved — cart cleared");
+        toast("Order placed — thank you!");
       };
 
       renderCart();
-      renderScheduler();
       observeReveals();
       loadMenu();
     </script>
