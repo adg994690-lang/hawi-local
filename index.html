@@ -1,556 +1,477 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>HAWI — Order Your Ethiopian Favourites</title>
-    <meta name="description" content="Scan, browse and order authentic Ethiopian dishes at HAWI. Pay securely with Telebirr and get an instant receipt." />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              midnight: "#111111", charcoal: "#444444", steel: "#777777",
-              cloud: "#F9FAFB", cool: "#E5E7EB", primary: "#E43D30",
-              coral: "#F15A3C", orange: "#F97316", salmon: "#FF6B6B", gold: "#D4A843",
-            },
-            fontFamily: {
-              sans: ["Inter", "system-ui", "sans-serif"],
-              display: ["'Plus Jakarta Sans'", "Inter", "sans-serif"],
-            },
-          },
-        },
-      };
-    </script>
-    <style>
-      body { font-family: Inter, system-ui, sans-serif; background: #F9FAFB; color: #111111; }
-      h1,h2,h3,h4 { font-family: 'Plus Jakarta Sans', Inter, sans-serif; font-weight: 800; }
-      .brand-grad { background-image: linear-gradient(90deg, #E43D30 0%, #F15A3C 50%, #F97316 100%); }
-      .brand-text { background-image: linear-gradient(90deg,#E43D30,#F15A3C,#F97316); -webkit-background-clip: text; background-clip: text; color: transparent; }
-      .glass-nav { background: rgba(255,255,255,0.88); backdrop-filter: blur(16px); border-bottom: 1px solid #E5E7EB; }
-      .card { background:#fff; border:1px solid #E5E7EB; border-radius:1rem; transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s ease; }
-      .card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px -10px rgba(228,61,48,0.12); }
-      .reveal { opacity:0; transform: translateY(28px) scale(.985); transition: opacity .7s cubic-bezier(.2,.8,.2,1), transform .7s cubic-bezier(.2,.8,.2,1); will-change: opacity, transform; }
-      .reveal.in { opacity:1; transform:none; }
-      .float-slow { animation: floaty 7s ease-in-out infinite; }
-      @keyframes floaty { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
-      @keyframes toastUp { from{opacity:0; transform:translate(-50%,20px)} to{opacity:1; transform:translate(-50%,0)} }
-      .toast { animation: toastUp .25s ease-out; }
-      .spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg) } }
-      @media (prefers-reduced-motion: reduce) { .reveal{opacity:1;transform:none;transition:none} .float-slow{animation:none} }
-    </style>
-  </head>
-  <body class="min-h-screen">
-    <!-- NAV -->
-    <nav class="glass-nav fixed top-0 inset-x-0 z-40 h-20 flex items-center">
-      <div class="mx-auto w-full max-w-6xl px-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="brand-grad w-11 h-11 rounded-2xl grid place-items-center text-white font-display text-lg">H</div>
-          <div>
-            <h1 class="text-lg leading-tight">HAWI</h1>
-            <p class="text-xs text-steel">Ethiopian Kitchen</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <span id="tableBadge" class="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-cool bg-white px-3 py-1.5 text-xs font-semibold text-charcoal">
-            <iconify-icon icon="lucide:armchair"></iconify-icon> Walk-in
-          </span>
-          <button id="cartBtn" class="relative brand-grad text-white font-bold rounded-xl px-4 py-2.5 text-sm flex items-center gap-2">
-            <iconify-icon icon="lucide:shopping-bag"></iconify-icon> Cart
-            <span id="cartCount" class="hidden absolute -top-2 -right-2 min-w-[22px] h-[22px] rounded-full bg-midnight text-white text-[11px] grid place-items-center px-1">0</span>
-          </button>
-        </div>
-      </div>
-    </nav>
-
-    <!-- HERO -->
-    <header class="pt-28 pb-10 px-4">
-      <div class="mx-auto max-w-6xl reveal">
-        <div class="relative overflow-hidden rounded-[2rem] brand-grad text-white p-8 sm:p-12">
-          <div class="absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10 float-slow"></div>
-          <div class="absolute -left-8 bottom--8 w-32 h-32 rounded-full bg-white/10 float-slow" style="animation-delay:1.4s"></div>
-          <p class="text-white/85 text-sm font-semibold tracking-wide uppercase">Fresh from our kitchen</p>
-          <h2 class="mt-2 text-3xl sm:text-5xl max-w-xl leading-tight">Authentic Ethiopian flavours, ordered from your table.</h2>
-          <p class="mt-3 text-white/85 max-w-lg">Browse today's menu, build your order and pay instantly with Telebirr.</p>
-        </div>
-      </div>
-    </header>
-
-    <main class="mx-auto max-w-6xl px-4 pb-28">
-      <div id="pills" class="flex flex-wrap gap-2 mb-6 reveal"></div>
-      <div id="stateBox" class="hidden card p-10 text-center"></div>
-      <div id="grid" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"></div>
-    </main>
-
-    <!-- CART DRAWER -->
-    <div id="cartOverlay" class="hidden fixed inset-0 z-50 bg-midnight/40"></div>
-    <aside id="cartDrawer" class="fixed z-50 top-0 right-0 h-full w-full sm:w-[420px] bg-white border-l border-cool translate-x-full transition-transform duration-300 flex flex-col">
-      <div class="h-20 px-5 flex items-center justify-between border-b border-cool">
-        <h3 class="text-lg">Your Order</h3>
-        <button id="cartClose" class="w-10 h-10 rounded-xl border border-cool grid place-items-center"><iconify-icon icon="lucide:x"></iconify-icon></button>
-      </div>
-      <div id="cartItems" class="flex-1 overflow-y-auto p-5 space-y-3"></div>
-      <div class="border-t border-cool p-5 space-y-3">
-        <div class="rounded-xl border border-cool bg-cloud p-4 space-y-3">
-          <div>
-            <p class="text-xs font-bold uppercase tracking-wide text-steel mb-2">Choose your day</p>
-            <div id="dayChips" class="flex flex-wrap gap-2"></div>
-          </div>
-          <div>
-            <p class="text-xs font-bold uppercase tracking-wide text-steel mb-2">Choose your time</p>
-            <div id="timeChips" class="flex flex-wrap gap-2"></div>
-            <div class="mt-3 flex items-center gap-2">
-              <span class="text-xs text-steel whitespace-nowrap">Or type your own time</span>
-              <input id="manualTime" type="text" placeholder="e.g. 3:45 PM" class="flex-1 min-w-0 rounded-full border border-cool bg-white px-3 py-1.5 text-xs text-charcoal placeholder:text-steel focus:outline-none focus:border-primary" />
-            </div>
-          </div>
-          <p id="schedSummary" class="text-xs text-steel"></p>
-        </div>
-        <div class="flex items-center justify-between text-sm text-steel"><span>Total</span><span id="cartTotal" class="text-xl font-display text-midnight">0.00 ETB</span></div>
-        <button id="placeOrderBtn" class="brand-grad w-full text-white font-bold rounded-xl py-3.5 disabled:opacity-40">Place Order</button>
-      </div>
-    </aside>
-
-    <!-- PAYMENT MODAL -->
-    <div id="payModal" class="hidden fixed inset-0 z-[60] bg-midnight/50 p-4 overflow-y-auto">
-      <div class="mx-auto my-8 max-w-md bg-white rounded-2xl border border-cool p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg">Pay with Telebirr</h3>
-          <button id="payClose" class="w-9 h-9 rounded-xl border border-cool grid place-items-center"><iconify-icon icon="lucide:x"></iconify-icon></button>
-        </div>
-        <div id="payBody" class="space-y-4"></div>
-      </div>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HAWI — Order Your Ethiopian Favourites</title>
+<meta name="description" content="Scan, browse and order authentic Ethiopian dishes at HAWI. Pay with Telebirr or a bank transfer and get an instant receipt." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" />
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--midnight:#111;--charcoal:#444;--steel:#777;--cloud:#F9FAFB;--cool:#E5E7EB;--brand:#E43D30;--coral:#F15A3C;--flame:#F97316}
+body{font-family:Inter,system-ui,sans-serif;background:var(--cloud);color:var(--midnight);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:"Plus Jakarta Sans",Inter,sans-serif;font-weight:800}
+img{max-width:100%;display:block}
+button,input{font:inherit}
+button{cursor:pointer;border:0;background:none;color:inherit}
+.grad{background-image:linear-gradient(90deg,#E43D30 0%,#F15A3C 50%,#F97316 100%);color:#fff}
+.grad-text{background-image:linear-gradient(90deg,#E43D30,#F15A3C,#F97316);-webkit-background-clip:text;background-clip:text;color:transparent}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+nav{position:fixed;top:0;left:0;right:0;height:80px;display:flex;align-items:center;background:rgba(255,255,255,.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--cool);z-index:40}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;width:100%}
+.brandbox{display:flex;align-items:center;gap:12px}
+.logo{width:44px;height:44px;border-radius:16px;display:grid;place-items:center;font-family:"Plus Jakarta Sans";font-weight:800;font-size:18px}
+.muted{color:var(--steel)}
+.tiny{font-size:12px}
+.pill{display:inline-flex;align-items:center;border:1px solid var(--cool);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600}
+.btn{border-radius:12px;padding:10px 16px;font-weight:700;font-size:14px}
+.btn-lg{border-radius:12px;padding:14px;font-weight:700;width:100%;font-size:15px}
+.btn:disabled,.btn-lg:disabled{opacity:.4;cursor:not-allowed}
+.cartbtn{position:relative}
+.badge{position:absolute;top:-8px;right:-8px;min-width:22px;height:22px;border-radius:999px;background:var(--midnight);color:#fff;font-size:11px;display:grid;place-items:center;padding:0 4px}
+header.hero{padding:112px 0 40px}
+.herobox{position:relative;overflow:hidden;border-radius:32px;padding:48px 32px}
+.herobox .blob{position:absolute;right:-40px;top:-40px;width:190px;height:190px;border-radius:999px;background:rgba(255,255,255,.12);animation:floaty 7s ease-in-out infinite}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.88}
+.herobox h2{font-size:clamp(26px,5vw,46px);line-height:1.1;margin-top:8px;max-width:620px}
+.herobox p{margin-top:12px;opacity:.88;max-width:520px}
+main{padding-bottom:120px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
+.chip{border-radius:999px;padding:8px 16px;font-size:14px;font-weight:600;background:#fff;border:1px solid var(--cool)}
+.chip.on{background-image:linear-gradient(90deg,#E43D30,#F15A3C,#F97316);color:#fff;border-color:transparent}
+.chip-sm{border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;background:#fff;border:1px solid var(--cool)}
+.chip-sm.on{background-image:linear-gradient(90deg,#E43D30,#F15A3C,#F97316);color:#fff;border-color:transparent}
+.card{background:#fff;border:1px solid var(--cool);border-radius:16px;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
+.card:hover{transform:translateY(-6px);box-shadow:0 20px 40px -10px rgba(228,61,48,.12)}
+.grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.dish{overflow:hidden;display:flex;flex-direction:column}
+.dish .ph,.dish img{width:100%;height:176px;object-fit:cover}
+.dish .ph{display:grid;place-items:center;background:var(--cloud);color:var(--steel);font-size:30px}
+.tag{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.95);border:1px solid var(--cool);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700}
+.dish .body{padding:20px;display:flex;flex-direction:column;gap:8px;flex:1}
+.price{font-family:"Plus Jakarta Sans";font-weight:800;font-size:18px}
+.row{display:flex;align-items:center;justify-content:space-between}
+.qty{display:flex;align-items:center;gap:8px}
+.sq{width:36px;height:36px;border-radius:12px;border:1px solid var(--cool);display:grid;place-items:center;background:#fff}
+.sq.on{border:0}
+.state{padding:40px;text-align:center}
+.spin{display:inline-block;animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+#overlay{position:fixed;inset:0;background:rgba(17,17,17,.4);z-index:50;display:none}
+aside{position:fixed;top:0;right:0;height:100%;width:100%;max-width:420px;background:#fff;border-left:1px solid var(--cool);z-index:51;display:flex;flex-direction:column;transform:translateX(101%);transition:transform .3s}
+aside.open{transform:none}
+aside .head{height:80px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--cool)}
+aside .list{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+aside .foot{border-top:1px solid var(--cool);padding:20px;display:flex;flex-direction:column;gap:12px}
+.box{border:1px solid var(--cool);background:var(--cloud);border-radius:12px;padding:16px}
+.label{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--steel);margin-bottom:8px}
+.tinput{width:56px;border:1px solid var(--cool);border-radius:8px;background:#fff;padding:6px;text-align:center;font-size:14px}
+.err{color:#dc2626;font-size:12px;font-weight:600;margin-top:8px}
+.modal{position:fixed;inset:0;background:rgba(17,17,17,.55);z-index:60;padding:16px;overflow-y:auto;display:none}
+.modal.open{display:block}
+.sheet{max-width:440px;margin:32px auto;background:#fff;border:1px solid var(--cool);border-radius:20px;padding:24px}
+.acc{border:1px solid var(--cool);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;background:#fff;margin-bottom:8px}
+.acc.on{border-color:var(--brand);background:rgba(228,61,48,.05)}
+.acc .info{flex:1;text-align:left}
+.acc .num{font-family:"Plus Jakarta Sans";font-weight:700;letter-spacing:.02em}
+.copy{border:1px solid var(--cool);border-radius:12px;padding:8px 12px;font-size:12px;font-weight:700;flex-shrink:0}
+.file{display:block;width:100%;border:1px solid var(--cool);border-radius:12px;padding:10px;font-size:14px}
+#toasts{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:90;display:flex;flex-direction:column;align-items:center;gap:8px}
+.toast{border-radius:999px;padding:10px 16px;font-size:14px;font-weight:600;color:#fff;background:var(--midnight);box-shadow:0 10px 20px rgba(0,0,0,.18);animation:tu .25s ease-out}
+.toast.error{background:var(--brand)}
+@keyframes tu{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.center{text-align:center}
+.mt{margin-top:12px}
+canvas{width:100%;border:1px solid var(--cool);border-radius:12px;margin-top:16px}
+</style>
+</head>
+<body>
+<nav>
+  <div class="wrap">
+    <div class="brandbox">
+      <div class="logo grad">H</div>
+      <div><h1 style="font-size:18px">HAWI</h1><p class="tiny muted">Ethiopian Kitchen</p></div>
     </div>
-
-    <!-- RECEIPT MODAL -->
-    <div id="receiptModal" class="hidden fixed inset-0 z-[70] bg-midnight/60 p-4 overflow-y-auto">
-      <div class="mx-auto my-8 max-w-md bg-white rounded-2xl border border-cool p-6 text-center">
-        <div class="brand-grad w-14 h-14 rounded-2xl grid place-items-center text-white mx-auto mb-3 text-2xl"><iconify-icon icon="lucide:check"></iconify-icon></div>
-        <h3 class="text-xl">Order received!</h3>
-        <p class="text-sm text-steel mt-1">We're reviewing your payment proof now.</p>
-        <p id="receiptWhen" class="mt-2 text-sm font-semibold brand-text"></p>
-        <p class="mt-2 rounded-xl bg-cloud border border-cool p-3 text-xs text-steel">Please <strong class="text-charcoal">keep this ticket</strong> — download or screenshot it and show it to the staff when you arrive. It is your proof of order and payment.</p>
-        <canvas id="receiptCanvas" width="640" height="900" class="mt-4 w-full rounded-xl border border-cool"></canvas>
-        <button id="downloadReceipt" class="brand-grad w-full text-white font-bold rounded-xl py-3.5 mt-4">Download Receipt</button>
-      </div>
+    <div class="brandbox" style="gap:8px">
+      <span class="pill" id="tablePill">Walk-in</span>
+      <button class="btn grad cartbtn" id="openCart">Cart<span class="badge" id="cartCount" style="display:none">0</span></button>
     </div>
+  </div>
+</nav>
 
-    <div id="toasts" class="fixed z-[90] bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"></div>
+<header class="hero">
+  <div class="wrap">
+    <div class="herobox grad">
+      <div class="blob"></div>
+      <p class="eyebrow">Fresh from our kitchen</p>
+      <h2>Authentic Ethiopian flavours, ordered from your table.</h2>
+      <p>Browse today's menu, build your order and pay with Telebirr or a bank transfer.</p>
+    </div>
+  </div>
+</header>
 
-    <script>
-      const SUPABASE_URL = "https://jqyrjrhwgintuxhsxpsu.supabase.co";
-      const SUPABASE_KEY = "sb_publishable_i_TU_cb2C3TitU9wGAyHmw_cX5cPKMi";
-      const H = { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY };
-      const $ = (s) => document.querySelector(s);
-      const money = (n) => Number(n || 0).toFixed(2) + " ETB";
-      const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+<main class="wrap">
+  <div class="chips" id="cats"></div>
+  <div id="state" class="card state"><span class="spin">●</span><h3 class="mt">Loading today's menu</h3><p class="tiny muted">One moment please…</p></div>
+  <div class="grid" id="menu"></div>
+</main>
 
-      function toast(msg, kind) {
-        const el = document.createElement("div");
-        el.className = "toast rounded-full px-4 py-2.5 text-sm font-semibold text-white shadow-lg " + (kind === "error" ? "bg-primary" : "bg-midnight");
-        el.textContent = msg;
-        $("#toasts").appendChild(el);
-        setTimeout(() => el.remove(), 3000);
-      }
+<div id="overlay"></div>
+<aside id="cart">
+  <div class="head"><h3>Your Order</h3><button class="sq" id="closeCart">✕</button></div>
+  <div class="list" id="cartList"></div>
+  <div class="foot">
+    <div class="box">
+      <p class="label">Choose your day</p>
+      <div class="chips" id="days" style="margin-bottom:16px"></div>
+      <p class="label">Choose your time</p>
+      <div class="chips" id="times" style="margin-bottom:16px"></div>
+      <p class="label">Or write your own time</p>
+      <div class="chips" style="align-items:center;margin-bottom:0">
+        <input class="tinput" id="mh" inputmode="numeric" placeholder="8" aria-label="Hour" />
+        <strong class="muted">:</strong>
+        <input class="tinput" id="mm" inputmode="numeric" placeholder="30" aria-label="Minutes" />
+        <button class="chip-sm on" id="amBtn">AM</button>
+        <button class="chip-sm" id="pmBtn">PM</button>
+        <button class="chip-sm" id="setTime" style="border-color:var(--brand);color:var(--brand)">Set time</button>
+      </div>
+      <p class="err" id="timeErr" style="display:none"></p>
+      <p class="tiny muted" style="margin-top:12px" id="schedNote">Pick a day and a time so the kitchen knows when to serve you.</p>
+    </div>
+    <div class="row tiny muted"><span>Total</span><span class="price" style="color:var(--midnight);font-size:20px" id="cartTotal">0.00 ETB</span></div>
+    <button class="btn-lg grad" id="placeOrder" disabled>Place Order</button>
+  </div>
+</aside>
 
-      async function describeFailure(res, what) {
-        let body = "";
-        try { body = (await res.text()).slice(0, 220); } catch (_) {}
-        return `${what} — ${res.status} ${res.statusText}${body ? ": " + body : ""}`;
-      }
+<div class="modal" id="payModal">
+  <div class="sheet">
+    <div class="row" style="margin-bottom:16px"><h3>Choose how to pay</h3><button class="sq" id="closePay">✕</button></div>
+    <div id="payBody"></div>
+  </div>
+</div>
 
-      // ---------- scroll reveal ----------
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach((e, i) => { if (e.isIntersecting) { setTimeout(() => e.target.classList.add("in"), i * 60); io.unobserve(e.target); } });
-      }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
-      const observeReveals = () => document.querySelectorAll(".reveal:not(.in)").forEach((el) => io.observe(el));
+<div class="modal" id="receiptModal" style="z-index:70">
+  <div class="sheet center">
+    <div class="logo grad" style="width:56px;height:56px;margin:0 auto 12px;font-size:22px">✓</div>
+    <h3 style="font-size:20px">Order received!</h3>
+    <p class="tiny muted mt">We're reviewing your payment proof now.</p>
+    <p class="mt grad-text" style="font-weight:700;font-size:14px" id="rcSched"></p>
+    <p class="box tiny muted mt">Please <strong style="color:var(--charcoal)">keep this ticket</strong> — download or screenshot it and show it to the staff when you arrive.</p>
+    <canvas id="rcCanvas" width="640" height="900"></canvas>
+    <button class="btn-lg grad" style="margin-top:16px" id="dlReceipt">Download Receipt</button>
+  </div>
+</div>
 
-      // ---------- state ----------
-      const params = new URLSearchParams(location.search);
-      const TABLE = params.get("table") || "";
-      let MENU = [], FILTER = "All", CART = {}, LAST = null;
+<div id="toasts"></div>
 
-      if (TABLE) {
-        const b = $("#tableBadge");
-        b.classList.remove("hidden");
-        b.innerHTML = '<iconify-icon icon="lucide:armchair"></iconify-icon> Table ' + esc(TABLE);
-      }
+<script>
+(function(){
+"use strict";
+var SUPABASE_URL="https://jqyrjrhwgintuxhsxpsu.supabase.co";
+var SUPABASE_KEY="sb_publishable_i_TU_cb2C3TitU9wGAyHmw_cX5cPKMi";
+var H={apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY};
+var money=function(n){return (Number(n)||0).toFixed(2)+" ETB";};
+var esc=function(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});};
 
-      function showState(icon, title, text, tone) {
-        $("#grid").innerHTML = "";
-        const box = $("#stateBox");
-        box.classList.remove("hidden");
-        box.innerHTML = `<div class="mx-auto w-14 h-14 rounded-2xl grid place-items-center text-2xl ${tone === "error" ? "bg-primary/10 text-primary" : "bg-cloud text-steel"}"><iconify-icon icon="${icon}" class="${icon.includes("loader") ? "spin" : ""}"></iconify-icon></div>
-          <h3 class="mt-4 text-lg">${esc(title)}</h3><p class="mt-1 text-sm text-steel">${esc(text)}</p>`;
-      }
+var DAY_NAMES=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+var BASE_SLOTS=[];for(var m=11*60;m<=21*60;m+=30)BASE_SLOTS.push(m);
+var BANK_NAMES={CBE:"CBE (Commercial Bank of Ethiopia)",CBA:"CBA Bank",AWASH:"Awash Bank",DASHEN:"Dashen Bank",ABYSSINIA:"Bank of Abyssinia",BOA:"Bank of Abyssinia",WEGAGEN:"Wegagen Bank",NIB:"Nib Bank",OROMIA:"Oromia Bank",ZEMEN:"Zemen Bank",AMHARA:"Amhara Bank",TELEBIRR:"Telebirr",TLEBIR:"Telebirr",TELEBIR:"Telebirr",TLE:"Telebirr"};
+var DEFAULT_BANKS=[{key:"cba",kind:"bank",label:"CBA Bank",number:"10015455455545"},{key:"awash",kind:"bank",label:"Awash Bank",number:"17888555666"}];
 
-      async function loadMenu() {
-        showState("lucide:loader-2", "Loading today's menu", "One moment please…");
-        let rows;
-        try {
-          const res = await fetch(`${SUPABASE_URL}/rest/v1/menus?select=*&is_active_today=eq.true&order=category.asc,name.asc`, { headers: H });
-          if (!res.ok) throw new Error(await describeFailure(res, "Could not load the menu"));
-          rows = await res.json();
-        } catch (err) {
-          showState("lucide:wifi-off", "Menu unavailable", err.message || "Network request failed — please check your connection.", "error");
-          return;
-        }
-        MENU = Array.isArray(rows) ? rows : [];
-        if (!MENU.length) { $("#pills").innerHTML = ""; showState("lucide:utensils", "No dishes yet", "The kitchen hasn't published today's menu. Please check back shortly."); return; }
-        $("#stateBox").classList.add("hidden");
-        renderPills();
-        renderGrid();
-      }
+function fmt12(mins){var h24=Math.floor(mins/60),mn=mins%60,ap=h24>=12?"PM":"AM",h12=h24%12===0?12:h24%12;return h12+":"+String(mn).padStart(2,"0")+" "+ap;}
+function toHHMM(mins){return String(Math.floor(mins/60)).padStart(2,"0")+":"+String(mins%60).padStart(2,"0");}
+function fromHHMM(t){var m=/^(\d{1,2}):(\d{2})$/.exec(t||"");return m?Number(m[1])*60+Number(m[2]):null;}
+function prettyTime(t){if(!t)return"";if(t==="ASAP")return"as soon as possible";var mins=fromHHMM(t);return mins==null?t:fmt12(mins);}
+function isoOf(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 
-      function renderPills() {
-        const cats = ["All", ...Array.from(new Set(MENU.map((m) => m.category).filter(Boolean)))];
-        $("#pills").innerHTML = cats.map((c) => {
-          const on = c === FILTER;
-          return `<button data-cat="${esc(c)}" class="rounded-full px-4 py-2 text-sm font-semibold transition ${on ? "brand-grad text-white" : "bg-white border border-cool text-charcoal hover:border-coral"}">${esc(c)}</button>`;
-        }).join("");
-        $("#pills").querySelectorAll("button").forEach((b) => b.onclick = () => { FILTER = b.dataset.cat; renderPills(); renderGrid(); });
-      }
+function parseAccountBlob(text,holder){
+  return String(text).split(/[\s,;\n]+/).map(function(t){return t.trim();})
+   .filter(function(t){return /\d{5,}|\*{3,}/.test(t);})
+   .map(function(token,i){
+     var m=/^([A-Za-z]+)?\s*([+\d*\-]{5,})$/.exec(token);
+     var rawLabel=((m&&m[1])||"").toUpperCase();
+     var number=((m&&m[2])||token).trim();
+     var label=BANK_NAMES[rawLabel]||(rawLabel?rawLabel:"Account");
+     return {key:"acc-"+i+"-"+number,kind:label==="Telebirr"?"telebirr":"bank",label:label,holder:holder,number:number};
+   });
+}
+function buildAccounts(s){
+  s=s||{};var out=[];var blob=String(s.telebirr_number||"").trim();var holder=s.telebirr_name||"";
+  if(blob)out=out.concat(parseAccountBlob(blob,holder));
+  if(!out.length&&s.telebirr_qr_url)out.push({key:"telebirr",kind:"telebirr",label:"Telebirr",holder:holder,number:""});
+  if(s.telebirr_qr_url){for(var i=0;i<out.length;i++){if(out[i].kind==="telebirr"){out[i].qr=s.telebirr_qr_url;break;}}}
+  var raw=s.bank_accounts!=null?s.bank_accounts:(s.banks!=null?s.banks:null);var list=[];
+  if(Array.isArray(raw))list=raw;
+  else if(typeof raw==="string"){
+    try{var p=JSON.parse(raw);if(Array.isArray(p))list=p;}catch(e){
+      list=raw.split(/[\n;]+/).map(function(l){return l.trim();}).filter(Boolean).map(function(l){
+        var mm=/^(.*?)[:\s]+([\d\s-]{5,})$/.exec(l);return mm?{bank:mm[1],account:mm[2]}:null;}).filter(Boolean);
+    }
+  }
+  list.forEach(function(b,i){
+    var number=String(b.account||b.account_number||b.number||"").trim();if(!number)return;
+    out.push({key:"bank-"+i,kind:"bank",label:String(b.bank||b.name||b.label||"Bank"),holder:b.holder||b.account_name||"",number:number});
+  });
+  if(!out.some(function(a){return a.kind==="bank";}))out=out.concat(DEFAULT_BANKS);
+  return out;
+}
 
-      function renderGrid() {
-        const items = FILTER === "All" ? MENU : MENU.filter((m) => m.category === FILTER);
-        $("#grid").innerHTML = items.map((m) => {
-          const qty = CART[m.id]?.qty || 0;
-          const img = m.image_url
-            ? `<img src="${esc(m.image_url)}" alt="${esc(m.name)}" loading="lazy" class="w-full h-44 object-cover" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><div style="display:none" class="w-full h-44 place-items-center bg-cloud text-steel text-3xl"><iconify-icon icon="lucide:image-off"></iconify-icon></div>`
-            : `<div class="w-full h-44 grid place-items-center bg-cloud text-steel text-3xl"><iconify-icon icon="lucide:utensils-crossed"></iconify-icon></div>`;
-          return `<article class="card reveal overflow-hidden flex flex-col">
-            <div class="relative">${img}<span class="absolute top-3 left-3 rounded-full bg-white/95 border border-cool px-2.5 py-1 text-[11px] font-bold text-charcoal">${esc(m.category || "Dish")}</span></div>
-            <div class="p-5 flex flex-col gap-2 flex-1">
-              <h3 class="text-base">${esc(m.name)}</h3>
-              <p class="text-sm text-steel line-clamp-2 flex-1">${esc(m.description || "")}</p>
-              <div class="flex items-center justify-between pt-2">
-                <span class="font-display text-lg brand-text">${money(m.price)}</span>
-                ${qty ? `<div class="flex items-center gap-2">
-                    <button data-dec="${m.id}" class="w-9 h-9 rounded-xl border border-cool grid place-items-center"><iconify-icon icon="lucide:minus"></iconify-icon></button>
-                    <span class="w-6 text-center font-bold">${qty}</span>
-                    <button data-inc="${m.id}" class="w-9 h-9 rounded-xl brand-grad text-white grid place-items-center"><iconify-icon icon="lucide:plus"></iconify-icon></button>
-                  </div>`
-                  : `<button data-add="${m.id}" class="brand-grad text-white font-bold rounded-xl px-4 py-2 text-sm flex items-center gap-1.5"><iconify-icon icon="lucide:plus"></iconify-icon> Add</button>`}
-              </div>
-            </div>
-          </article>`;
-        }).join("");
-        $("#grid").querySelectorAll("[data-add]").forEach((b) => b.onclick = () => changeQty(b.dataset.add, 1, true));
-        $("#grid").querySelectorAll("[data-inc]").forEach((b) => b.onclick = () => changeQty(b.dataset.inc, 1));
-        $("#grid").querySelectorAll("[data-dec]").forEach((b) => b.onclick = () => changeQty(b.dataset.dec, -1));
-        observeReveals();
-      }
+/* ---------- state ---------- */
+var S={menu:[],filter:"All",cart:{},table:"",date:null,time:null,mer:"AM",accounts:[],selected:"",proof:null,proofUrl:"",receipt:null,copied:"",submitting:false};
+var $=function(id){return document.getElementById(id);};
 
-      function changeQty(id, delta, announce) {
-        const item = MENU.find((m) => m.id === id);
-        if (!item) return;
-        const cur = CART[id]?.qty || 0;
-        const next = cur + delta;
-        if (next <= 0) delete CART[id];
-        else CART[id] = { id: item.id, name: item.name, price: Number(item.price), qty: next };
-        if (announce) toast(item.name + " added to cart");
-        renderGrid(); renderCart();
-      }
+function toast(msg,kind){
+  var d=document.createElement("div");d.className="toast"+(kind==="error"?" error":"");d.textContent=msg;
+  $("toasts").appendChild(d);setTimeout(function(){d.remove();},3000);
+}
+function now(){return new Date();}
+function todayIso(){return isoOf(now());}
+function nowMins(){var n=now();return n.getHours()*60+n.getMinutes();}
+function isToday(){return S.date===todayIso();}
 
-      const cartList = () => Object.values(CART);
-      const cartTotal = () => cartList().reduce((s, i) => s + i.price * i.qty, 0);
+function dayOptions(){var out=[];for(var i=0;i<5;i++){var d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+i);
+  out.push({iso:isoOf(d),label:i===0?"Today":i===1?"Tomorrow":DAY_NAMES[d.getDay()],sub:d.toLocaleDateString(undefined,{day:"numeric",month:"short"})});}
+  return out;}
+var DAYS=dayOptions();
 
-      // ---------- scheduling ----------
-      const SCHED = { date: null, dateLabel: "", time: null };
-      const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      const TIME_SLOTS = [
-        "ASAP",
-        "11:00 AM", "11:30 AM",
-        "12:00 PM", "12:30 PM",
-        "1:00 PM", "1:30 PM",
-        "2:00 PM",
-        "5:00 PM", "5:30 PM",
-        "6:00 PM", "6:30 PM",
-        "7:00 PM", "7:30 PM",
-        "8:00 PM", "8:30 PM",
-        "9:00 PM"
-      ];
-      const chipCls = (on) => "rounded-full px-3 py-1.5 text-xs font-semibold border transition " + (on ? "brand-grad text-white border-transparent" : "bg-white border-cool text-charcoal hover:border-primary");
+function cartItems(){return Object.keys(S.cart).map(function(k){return S.cart[k];});}
+function total(){return cartItems().reduce(function(s,i){return s+i.price*i.qty;},0);}
+function count(){return cartItems().reduce(function(s,i){return s+i.qty;},0);}
+function schedLabel(){
+  if(!S.date||!S.time)return"";
+  var d=DAYS.filter(function(x){return x.iso===S.date;})[0];
+  var day=d?d.label+" ("+d.sub+")":S.date;
+  return S.time==="ASAP"?day+" — as soon as possible":day+" at "+prettyTime(S.time);
+}
 
-      function dayOptions() {
-        const out = [];
-        for (let i = 0; i < 5; i++) {
-          const d = new Date();
-          d.setHours(12, 0, 0, 0);
-          d.setDate(d.getDate() + i);
-          const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-          const label = i === 0 ? "Today" : i === 1 ? "Tomorrow" : DAY_NAMES[d.getDay()];
-          out.push({ iso, label, sub: d.toLocaleDateString(undefined, { day: "numeric", month: "short" }) });
-        }
-        return out;
-      }
-      const DAYS = dayOptions();
+/* ---------- menu ---------- */
+function renderMenu(){
+  var cats=["All"];S.menu.forEach(function(m){if(m.category&&cats.indexOf(m.category)<0)cats.push(m.category);});
+  $("cats").innerHTML=S.menu.length?cats.map(function(c){return '<button class="chip'+(c===S.filter?" on":"")+'" data-cat="'+esc(c)+'">'+esc(c)+'</button>';}).join(""):"";
+  var shown=S.filter==="All"?S.menu:S.menu.filter(function(m){return m.category===S.filter;});
+  $("menu").innerHTML=shown.map(function(m){
+    var qty=(S.cart[m.id]||{}).qty||0;
+    return '<article class="card dish"><div style="position:relative">'+
+      (m.image_url?'<img src="'+esc(m.image_url)+'" alt="'+esc(m.name)+'" loading="lazy" />':'<div class="ph">🍽</div>')+
+      '<span class="tag">'+esc(m.category||"Dish")+'</span></div>'+
+      '<div class="body"><h3 style="font-size:16px">'+esc(m.name)+'</h3>'+
+      '<p class="tiny muted" style="flex:1">'+esc(m.description||"")+'</p>'+
+      '<div class="row" style="padding-top:8px"><span class="price grad-text">'+money(m.price)+'</span>'+
+      (qty?'<div class="qty"><button class="sq" data-dec="'+esc(m.id)+'">−</button><strong>'+qty+'</strong><button class="sq on grad" data-inc="'+esc(m.id)+'">+</button></div>'
+        :'<button class="btn grad" data-add="'+esc(m.id)+'">+ Add</button>')+
+      '</div></div></article>';
+  }).join("");
+}
+function setState(title,text,icon){
+  if(!title){$("state").style.display="none";return;}
+  $("state").style.display="";
+  $("state").innerHTML=(icon==="spin"?'<span class="spin">●</span>':'<span style="font-size:26px">'+(icon||"🍽")+'</span>')+
+    '<h3 class="mt">'+esc(title)+'</h3><p class="tiny muted">'+esc(text)+'</p>';
+}
+async function describeFailure(res,what){var b="";try{b=(await res.text()).slice(0,220);}catch(e){}return what+" — "+res.status+" "+res.statusText+(b?": "+b:"");}
 
-      function schedLabel() {
-        if (!SCHED.date || !SCHED.time) return "";
-        const d = DAYS.find((x) => x.iso === SCHED.date);
-        const day = d ? `${d.label} (${d.sub})` : SCHED.date;
-        return SCHED.time === "ASAP" ? `${day} — as soon as possible` : `${day} at ${SCHED.time}`;
-      }
+async function loadMenu(){
+  try{
+    var res=await fetch(SUPABASE_URL+"/rest/v1/menus?select=*&is_active_today=eq.true&order=category.asc,name.asc",{headers:H});
+    if(!res.ok)throw new Error(await describeFailure(res,"Could not load the menu"));
+    var rows=await res.json();S.menu=Array.isArray(rows)?rows:[];
+    if(S.menu.length)setState(null);else setState("No dishes yet","The kitchen hasn't published today's menu. Please check back shortly.","🍽");
+    renderMenu();
+  }catch(err){setState("Menu unavailable",(err&&err.message)||"Network request failed — please check your connection.","⚠");}
+}
 
-      function updateSchedSummary() {
-        const done = SCHED.date && SCHED.time;
-        $("#schedSummary").textContent = done
-          ? `We'll serve your order: ${schedLabel()}`
-          : "Pick a day and a time so the kitchen knows when to serve you.";
-      }
+/* ---------- cart ---------- */
+function changeQty(id,delta,announce){
+  var item=S.menu.filter(function(m){return m.id===id;})[0];if(!item)return;
+  var next=((S.cart[id]||{}).qty||0)+delta;
+  if(next<=0)delete S.cart[id];else S.cart[id]={id:item.id,name:item.name,price:Number(item.price),qty:next};
+  if(announce)toast(item.name+" added to cart");
+  renderMenu();renderCart();
+}
+function renderCart(){
+  var items=cartItems();
+  $("cartCount").style.display=count()?"grid":"none";$("cartCount").textContent=count();
+  $("tablePill").textContent=S.table?"Table "+S.table:"Walk-in";
+  $("cartList").innerHTML=items.length?items.map(function(i){
+    return '<div class="card" style="padding:16px;display:flex;align-items:center;gap:12px"><div style="flex:1"><p style="font-weight:600;font-size:14px">'+esc(i.name)+'</p><p class="tiny muted">'+money(i.price)+' each</p></div>'+
+      '<div class="qty"><button class="sq" data-dec="'+esc(i.id)+'">−</button><strong>'+i.qty+'</strong><button class="sq on grad" data-inc="'+esc(i.id)+'">+</button></div>'+
+      '<span class="price" style="width:96px;text-align:right;font-size:14px">'+money(i.price*i.qty)+'</span></div>';
+  }).join(""):'<div class="center muted tiny" style="padding:60px 0">Your cart is empty.</div>';
+  $("cartTotal").textContent=money(total());
+  $("placeOrder").disabled=!items.length||!S.date||!S.time;
+  $("schedNote").textContent=(S.date&&S.time)?"We'll serve your order: "+schedLabel():"Pick a day and a time so the kitchen knows when to serve you.";
+  renderDays();renderTimes();
+}
+function renderDays(){
+  $("days").innerHTML=DAYS.map(function(d){return '<button class="chip-sm'+(S.date===d.iso?" on":"")+'" data-day="'+d.iso+'">'+esc(d.label)+' · '+esc(d.sub)+'</button>';}).join("");
+}
+function renderTimes(){
+  var slots=isToday()?BASE_SLOTS.filter(function(m){return m>nowMins();}):BASE_SLOTS;
+  var html='<button class="chip-sm'+(S.time==="ASAP"?" on":"")+'" data-time="ASAP">ASAP</button>';
+  html+=slots.map(function(m){var t=toHHMM(m);return '<button class="chip-sm'+(S.time===t?" on":"")+'" data-time="'+t+'">'+fmt12(m)+'</button>';}).join("");
+  if(isToday()&&!slots.length)html+='<span class="tiny muted">No later times left today — pick another day or choose ASAP.</span>';
+  $("times").innerHTML=html;
+}
+function showTimeErr(msg){var e=$("timeErr");if(!msg){e.style.display="none";return;}e.style.display="";e.textContent=msg;}
 
-      function renderScheduler() {
-        $("#dayChips").innerHTML = DAYS.map((d) =>
-          `<button data-day="${d.iso}" class="${chipCls(SCHED.date === d.iso)}">${esc(d.label)} · ${esc(d.sub)}</button>`).join("");
-        $("#timeChips").innerHTML = TIME_SLOTS.map((t) =>
-          `<button data-time="${esc(t)}" class="${chipCls(SCHED.time === t)}">${esc(t)}</button>`).join("");
-        $("#dayChips").querySelectorAll("[data-day]").forEach((b) => b.onclick = () => { SCHED.date = b.dataset.day; renderScheduler(); renderCart(); });
-        $("#timeChips").querySelectorAll("[data-time]").forEach((b) => b.onclick = () => {
-          SCHED.time = b.dataset.time;
-          const manual = $("#manualTime");
-          if (manual) manual.value = "";
-          refreshChipHighlights();
-          updateSchedSummary();
-          renderCart();
-        });
+function applyManualTime(){
+  var h=Number($("mh").value),mn=$("mm").value===""?0:Number($("mm").value);
+  if(!S.date){showTimeErr("Please choose the day first.");return;}
+  if(!Number.isInteger(h)||h<1||h>12||!Number.isInteger(mn)||mn<0||mn>59){showTimeErr("Enter an hour from 1 to 12 and minutes from 00 to 59.");return;}
+  var h24=h%12;if(S.mer==="PM")h24+=12;var mins=h24*60+mn;
+  if(isToday()&&mins===nowMins()){S.time="ASAP";showTimeErr("");toast("That's right now — set to as soon as possible");renderCart();return;}
+  if(isToday()&&mins<nowMins()){showTimeErr("That time has already passed today. Please pick a later time or another day.");return;}
+  S.time=toHHMM(mins);showTimeErr("");toast("Serve time set to "+fmt12(mins));renderCart();
+}
 
-        const manual = $("#manualTime");
-        if (manual) {
-          if (SCHED.time && !TIME_SLOTS.includes(SCHED.time)) {
-            manual.value = SCHED.time;
-          } else if (TIME_SLOTS.includes(SCHED.time)) {
-            manual.value = "";
-          }
-          manual.oninput = () => {
-            const v = manual.value.trim();
-            SCHED.time = v || null;
-            refreshChipHighlights();
-            updateSchedSummary();
-            renderCart();
-          };
-        }
+/* ---------- payment ---------- */
+function openCart(open){$("cart").classList.toggle("open",open);$("overlay").style.display=open?"block":"none";}
+function openModal(id,open){$(id).classList.toggle("open",open);}
 
-        updateSchedSummary();
-      }
+async function openPayment(){
+  if(!cartItems().length)return;
+  if(!S.date||!S.time){toast("Please choose the day and time first","error");return;}
+  if(S.date<todayIso()){toast("That day has already passed — please pick a future day","error");return;}
+  if(isToday()&&S.time!=="ASAP"){var mins=fromHHMM(S.time);if(mins!=null&&mins<=nowMins()){toast("That time has already passed — please pick a later time","error");S.time=null;renderCart();return;}}
+  S.proof=null;S.proofUrl="";S.payError="";
+  openCart(false);openModal("payModal",true);
+  $("payBody").innerHTML='<div class="center muted tiny" style="padding:40px 0">Loading payment details…</div>';
+  try{
+    var res=await fetch(SUPABASE_URL+"/rest/v1/payment_settings?select=*&id=eq.1",{headers:H});
+    if(!res.ok)throw new Error(await describeFailure(res,"Could not load payment details"));
+    var s=(await res.json())[0]||{};
+    S.accounts=buildAccounts(s);
+  }catch(err){S.accounts=buildAccounts({});S.payError=(err&&err.message)||"Could not load payment details.";}
+  S.selected=(S.accounts[0]||{}).key||"";
+  renderPay();
+}
+function renderPay(){
+  var active=S.accounts.filter(function(a){return a.key===S.selected;})[0];
+  var html='<div class="box row" style="margin-bottom:16px"><span class="tiny muted">Amount due</span><span class="price grad-text" style="font-size:20px">'+money(total())+'</span></div>';
+  html+='<p class="label">Payment options</p>';
+  html+=S.accounts.map(function(a){
+    return '<div class="acc'+(a.key===S.selected?" on":"")+'"><button class="info" data-sel="'+esc(a.key)+'">'+
+      '<p style="font-size:14px;font-weight:700">'+esc(a.label)+(a.kind==="telebirr"?" (mobile money)":" (bank transfer)")+'</p>'+
+      '<p class="num">'+esc(a.number||"—")+'</p>'+(a.holder?'<p class="tiny muted">'+esc(a.holder)+'</p>':"")+'</button>'+
+      (a.number?'<button class="copy" data-copy="'+esc(a.key)+'">'+(S.copied===a.key?"Copied ✓":"Copy")+'</button>':"")+'</div>';
+  }).join("");
+  html+='<p class="tiny muted">Copy the number, send '+money(total())+' from your bank or Telebirr app, then upload the screenshot below.</p>';
+  if(active&&active.kind==="telebirr"&&active.qr)html+='<div class="card center" style="padding:16px;margin-top:16px"><img src="'+esc(active.qr)+'" alt="Telebirr payment QR code" style="width:208px;height:208px;object-fit:contain;margin:0 auto;border-radius:12px" /></div>';
+  html+='<div class="box row" style="margin-top:16px"><span class="tiny muted">Serve time</span><span style="font-size:14px;font-weight:600;text-align:right">'+esc(schedLabel())+'</span></div>';
+  html+='<div style="margin-top:16px"><label style="display:block;font-size:14px;font-weight:600;margin-bottom:6px">Upload your payment screenshot</label>'+
+    '<input class="file" type="file" accept="image/*" id="proofInput" />'+
+    (S.proofUrl?'<img src="'+S.proofUrl+'" alt="Payment screenshot preview" style="margin-top:12px;max-height:220px;object-fit:contain;border:1px solid var(--cool);border-radius:12px" />':"")+'</div>';
+  html+='<button class="btn-lg grad" style="margin-top:16px" id="submitOrder"'+(!S.proof||S.submitting?" disabled":"")+'>'+(S.submitting?"Uploading…":"Submit Order &amp; Proof of Payment")+'</button>';
+  if(S.payError)html+='<p style="color:var(--brand);font-size:14px;margin-top:8px">'+esc(S.payError)+'</p>';
+  $("payBody").innerHTML=html;
+  $("proofInput").addEventListener("change",function(e){
+    var f=e.target.files&&e.target.files[0]?e.target.files[0]:null;
+    S.proof=f;S.proofUrl=f?URL.createObjectURL(f):"";renderPay();
+  });
+  $("submitOrder").addEventListener("click",submitOrder);
+}
+async function copyNum(acc){
+  try{await navigator.clipboard.writeText(acc.number);}
+  catch(e){var ta=document.createElement("textarea");ta.value=acc.number;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();}
+  S.copied=acc.key;renderPay();toast(acc.label+" number copied");
+  setTimeout(function(){S.copied="";if($("payModal").classList.contains("open"))renderPay();},1800);
+}
+async function submitOrder(){
+  if(!S.proof)return;
+  var acc=S.accounts.filter(function(a){return a.key===S.selected;})[0];
+  S.submitting=true;S.payError="";renderPay();
+  try{
+    var ext=(S.proof.name.split(".").pop()||"png").toLowerCase();
+    var path="proof-"+Date.now()+"-"+Math.random().toString(36).slice(2,8)+"."+ext;
+    var up=await fetch(SUPABASE_URL+"/storage/v1/object/payment-proofs/"+path,{method:"POST",headers:Object.assign({},H,{"Content-Type":S.proof.type||"application/octet-stream"}),body:S.proof});
+    if(!up.ok)throw new Error(await describeFailure(up,"Could not upload your payment screenshot"));
+    var publicUrl=SUPABASE_URL+"/storage/v1/object/public/payment-proofs/"+path;
+    var payload={table_number:S.table||"Walk-in",items:cartItems(),total_amount:Number(total().toFixed(2)),status:"pending_review",
+      payment_method:acc&&acc.kind==="bank"?"bank:"+acc.label:"telebirr",payment_screenshot_url:publicUrl,
+      scheduled_date:S.date,scheduled_time:S.time,scheduled_label:schedLabel()};
+    var ins=await fetch(SUPABASE_URL+"/rest/v1/orders",{method:"POST",headers:Object.assign({},H,{"Content-Type":"application/json",Prefer:"return=representation"}),body:JSON.stringify(payload)});
+    if(!ins.ok)throw new Error(await describeFailure(ins,"Could not submit your order"));
+    var row=(await ins.json())[0]||{};
+    S.submitting=false;
+    S.receipt=Object.assign({},payload,{paidTo:acc?acc.label+" — "+acc.number:"Telebirr",id:row.id||"—",created_at:row.created_at||new Date().toISOString()});
+    openModal("payModal",false);showReceipt();toast("Order placed — thank you!");
+  }catch(e){S.submitting=false;S.payError=(e&&e.message)||"Network request failed while submitting your order.";renderPay();toast("Order could not be submitted","error");}
+}
 
-      function refreshChipHighlights() {
-        $("#timeChips").querySelectorAll("[data-time]").forEach((b) => {
-          b.className = chipCls(SCHED.time === b.dataset.time);
-        });
-      }
+/* ---------- receipt ---------- */
+function showReceipt(){
+  var r=S.receipt;if(!r)return;
+  $("rcSched").textContent=r.scheduled_label?"Serve time: "+r.scheduled_label:"";
+  var c=$("rcCanvas"),g=c.getContext("2d");
+  g.fillStyle="#FFFFFF";g.fillRect(0,0,c.width,c.height);
+  var grad=g.createLinearGradient(0,0,c.width,0);grad.addColorStop(0,"#E43D30");grad.addColorStop(.5,"#F15A3C");grad.addColorStop(1,"#F97316");
+  g.fillStyle=grad;g.fillRect(0,0,c.width,120);
+  g.fillStyle="#FFF";g.font="800 40px 'Plus Jakarta Sans', sans-serif";g.fillText("HAWI",40,60);
+  g.font="500 18px Inter, sans-serif";g.fillText("Ethiopian Kitchen — Order Receipt",40,92);
+  var y=175;g.fillStyle="#777";g.font="500 16px Inter, sans-serif";
+  g.fillText("Order ID",40,y);g.fillText("Table",40,y+34);g.fillText("Placed",40,y+68);g.fillText("Serve time",40,y+102);
+  g.fillStyle="#111";g.font="600 16px Inter, sans-serif";
+  g.fillText(String(r.id).slice(0,28),190,y);g.fillText(String(r.table_number),190,y+34);
+  g.fillText(new Date(r.created_at).toLocaleString(),190,y+68);
+  g.fillStyle="#E43D30";g.font="700 16px Inter, sans-serif";
+  g.fillText(String(r.scheduled_label||"As soon as possible").slice(0,34),190,y+102);
+  y+=150;g.strokeStyle="#E5E7EB";g.beginPath();g.moveTo(40,y);g.lineTo(600,y);g.stroke();
+  y+=36;g.fillStyle="#444";g.font="700 18px 'Plus Jakarta Sans', sans-serif";g.fillText("Items",40,y);
+  y+=30;g.font="500 16px Inter, sans-serif";
+  r.items.forEach(function(i){
+    g.fillStyle="#111";g.fillText(i.qty+" x "+String(i.name).slice(0,30),40,y);
+    g.fillStyle="#444";var t=(i.price*i.qty).toFixed(2)+" ETB";g.fillText(t,600-g.measureText(t).width,y);y+=30;});
+  y+=12;g.strokeStyle="#E5E7EB";g.beginPath();g.moveTo(40,y);g.lineTo(600,y);g.stroke();
+  y+=44;g.fillStyle="#111";g.font="800 24px 'Plus Jakarta Sans', sans-serif";g.fillText("Total",40,y);
+  var tt=Number(r.total_amount).toFixed(2)+" ETB";g.fillStyle="#E43D30";g.fillText(tt,600-g.measureText(tt).width,y);
+  y+=50;g.fillStyle="#777";g.font="500 15px Inter, sans-serif";
+  g.fillText(("Paid to "+r.paidTo+" — awaiting confirmation.").slice(0,58),40,y);
+  g.fillStyle="#111";g.font="700 15px Inter, sans-serif";g.fillText("Keep this ticket — show it to our staff on arrival.",40,y+26);
+  g.fillStyle="#777";g.font="500 15px Inter, sans-serif";g.fillText("Thank you for dining with HAWI!",40,y+52);
+  openModal("receiptModal",true);
+}
+function downloadReceipt(){
+  var c=$("rcCanvas");var a=document.createElement("a");
+  a.href=c.toDataURL("image/png");a.download="hawi-receipt-"+String((S.receipt&&S.receipt.id)||Date.now()).slice(0,8)+".png";
+  document.body.appendChild(a);a.click();a.remove();
+  S.cart={};S.receipt=null;S.proof=null;S.proofUrl="";S.date=null;S.time=null;
+  openModal("receiptModal",false);renderMenu();renderCart();toast("Receipt saved — cart cleared");
+}
 
-      function renderCart() {
-        const items = cartList();
-        const c = $("#cartCount");
-        const count = items.reduce((s, i) => s + i.qty, 0);
-        c.textContent = count; c.classList.toggle("hidden", count === 0);
-        $("#cartTotal").textContent = money(cartTotal());
-        $("#placeOrderBtn").disabled = items.length === 0 || !SCHED.date || !SCHED.time;
-        $("#cartItems").innerHTML = items.length
-          ? items.map((i) => `<div class="card p-4 flex items-center gap-3">
-              <div class="flex-1"><p class="font-semibold text-sm">${esc(i.name)}</p><p class="text-xs text-steel">${money(i.price)} each</p></div>
-              <div class="flex items-center gap-2">
-                <button data-cdec="${i.id}" class="w-8 h-8 rounded-lg border border-cool grid place-items-center"><iconify-icon icon="lucide:minus"></iconify-icon></button>
-                <span class="w-5 text-center text-sm font-bold">${i.qty}</span>
-                <button data-cinc="${i.id}" class="w-8 h-8 rounded-lg brand-grad text-white grid place-items-center"><iconify-icon icon="lucide:plus"></iconify-icon></button>
-              </div>
-              <span class="w-24 text-right text-sm font-display">${money(i.price * i.qty)}</span>
-            </div>`).join("")
-          : `<div class="text-center py-16 text-steel text-sm"><div class="text-4xl mb-2"><iconify-icon icon="lucide:shopping-bag"></iconify-icon></div>Your cart is empty.</div>`;
-        $("#cartItems").querySelectorAll("[data-cinc]").forEach((b) => b.onclick = () => changeQty(b.dataset.cinc, 1));
-        $("#cartItems").querySelectorAll("[data-cdec]").forEach((b) => b.onclick = () => changeQty(b.dataset.cdec, -1));
-      }
+/* ---------- events ---------- */
+document.addEventListener("click",function(e){
+  var t=e.target.closest("button");if(!t)return;
+  if(t.dataset.cat){S.filter=t.dataset.cat;renderMenu();return;}
+  if(t.dataset.add){changeQty(t.dataset.add,1,true);return;}
+  if(t.dataset.inc){changeQty(t.dataset.inc,1);return;}
+  if(t.dataset.dec){changeQty(t.dataset.dec,-1);return;}
+  if(t.dataset.day){S.date=t.dataset.day;showTimeErr("");renderCart();return;}
+  if(t.dataset.time){S.time=t.dataset.time;showTimeErr("");renderCart();return;}
+  if(t.dataset.sel){S.selected=t.dataset.sel;renderPay();return;}
+  if(t.dataset.copy){var a=S.accounts.filter(function(x){return x.key===t.dataset.copy;})[0];if(a)copyNum(a);return;}
+});
+$("openCart").addEventListener("click",function(){openCart(true);});
+$("closeCart").addEventListener("click",function(){openCart(false);});
+$("overlay").addEventListener("click",function(){openCart(false);});
+$("closePay").addEventListener("click",function(){openModal("payModal",false);});
+$("placeOrder").addEventListener("click",openPayment);
+$("dlReceipt").addEventListener("click",downloadReceipt);
+$("setTime").addEventListener("click",applyManualTime);
+$("amBtn").addEventListener("click",function(){S.mer="AM";$("amBtn").classList.add("on");$("pmBtn").classList.remove("on");});
+$("pmBtn").addEventListener("click",function(){S.mer="PM";$("pmBtn").classList.add("on");$("amBtn").classList.remove("on");});
+["mh","mm"].forEach(function(id){$(id).addEventListener("input",function(e){e.target.value=e.target.value.replace(/\D/g,"").slice(0,2);});});
 
-      function openCart(open) {
-        $("#cartDrawer").classList.toggle("translate-x-full", !open);
-        $("#cartOverlay").classList.toggle("hidden", !open);
-      }
-      $("#cartBtn").onclick = () => openCart(true);
-      $("#cartClose").onclick = () => openCart(false);
-      $("#cartOverlay").onclick = () => openCart(false);
-
-      // ---------- payment ----------
-      let PROOF_FILE = null;
-
-      $("#placeOrderBtn").onclick = async () => {
-        if (!cartList().length) return;
-        if (!SCHED.date || !SCHED.time) { toast("Please choose the day and time first", "error"); return; }
-        PROOF_FILE = null;
-        openCart(false);
-        $("#payModal").classList.remove("hidden");
-        $("#payBody").innerHTML = `<div class="py-10 text-center text-steel"><iconify-icon icon="lucide:loader-2" class="spin text-2xl"></iconify-icon><p class="text-sm mt-2">Loading payment details…</p></div>`;
-        let s = null;
-        try {
-          const res = await fetch(`${SUPABASE_URL}/rest/v1/payment_settings?select=*&id=eq.1`, { headers: H });
-          if (!res.ok) throw new Error(await describeFailure(res, "Could not load payment details"));
-          s = (await res.json())[0] || {};
-        } catch (err) {
-          $("#payBody").innerHTML = `<div class="rounded-xl bg-primary/10 text-primary text-sm p-4">${esc(err.message)}</div>`;
-          return;
-        }
-        renderPayBody(s);
-      };
-
-      function renderPayBody(s) {
-        $("#payBody").innerHTML = `
-          <div class="card p-4 text-center">
-            ${s.telebirr_qr_url
-              ? `<img src="${esc(s.telebirr_qr_url)}" alt="Telebirr payment QR code" class="mx-auto w-52 h-52 object-contain rounded-xl" onerror="this.replaceWith(Object.assign(document.createElement('p'),{className:'text-sm text-steel py-16',textContent:'Payment QR image could not be displayed. Please ask staff.'}))">`
-              : `<p class="text-sm text-steel py-16">The restaurant hasn't uploaded a Telebirr QR yet. Please ask a staff member.</p>`}
-            ${s.telebirr_name ? `<p class="mt-3 text-sm font-semibold">${esc(s.telebirr_name)}</p>` : ""}
-            ${s.telebirr_number ? `<p class="text-sm text-steel">${esc(s.telebirr_number)}</p>` : ""}
-          </div>
-          <div class="rounded-xl bg-cloud border border-cool p-4 flex items-center justify-between">
-            <span class="text-sm text-steel">Amount due</span><span class="font-display text-xl brand-text">${money(cartTotal())}</span>
-          </div>
-          <div class="rounded-xl bg-cloud border border-cool p-4 flex items-center justify-between gap-3">
-            <span class="text-sm text-steel">Serve time</span><span class="text-sm font-semibold text-right">${esc(schedLabel())}</span>
-          </div>
-          <div>
-            <label class="block text-sm font-semibold mb-1.5">Upload your Telebirr payment screenshot</label>
-            <input id="proofInput" type="file" accept="image/*" class="block w-full text-sm rounded-xl border border-cool p-2.5" />
-            <div id="proofPreview" class="mt-3"></div>
-          </div>
-          <button id="submitOrder" disabled class="brand-grad w-full text-white font-bold rounded-xl py-3.5 disabled:opacity-40">Submit Order &amp; Proof of Payment</button>
-          <p id="payError" class="hidden text-sm text-primary"></p>`;
-
-        $("#proofInput").onchange = (e) => {
-          const f = e.target.files[0];
-          PROOF_FILE = f || null;
-          $("#submitOrder").disabled = !f;
-          $("#proofPreview").innerHTML = "";
-          if (f) {
-            const img = document.createElement("img");
-            img.src = URL.createObjectURL(f);
-            img.alt = "Payment screenshot preview";
-            img.className = "w-full max-h-56 object-contain rounded-xl border border-cool";
-            $("#proofPreview").appendChild(img);
-          }
-        };
-        $("#submitOrder").onclick = submitOrder;
-      }
-
-      $("#payClose").onclick = () => $("#payModal").classList.add("hidden");
-
-      async function submitOrder() {
-        const btn = $("#submitOrder"), err = $("#payError");
-        if (!PROOF_FILE) return;
-        btn.disabled = true; btn.textContent = "Uploading…"; err.classList.add("hidden");
-        try {
-          const ext = (PROOF_FILE.name.split(".").pop() || "png").toLowerCase();
-          const path = `proof-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-          const up = await fetch(`${SUPABASE_URL}/storage/v1/object/payment-proofs/${path}`, {
-            method: "POST",
-            headers: { ...H, "Content-Type": PROOF_FILE.type || "application/octet-stream" },
-            body: PROOF_FILE,
-          });
-          if (!up.ok) throw new Error(await describeFailure(up, "Could not upload your payment screenshot"));
-          const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/payment-proofs/${path}`;
-
-          const payload = {
-            table_number: TABLE || "Walk-in",
-            items: cartList(),
-            total_amount: Number(cartTotal().toFixed(2)),
-            status: "pending_review",
-            payment_method: "telebirr",
-            payment_screenshot_url: publicUrl,
-            scheduled_date: SCHED.date,
-            scheduled_time: SCHED.time,
-            scheduled_label: schedLabel(),
-          };
-          const ins = await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
-            method: "POST",
-            headers: { ...H, "Content-Type": "application/json", Prefer: "return=representation" },
-            body: JSON.stringify(payload),
-          });
-          if (!ins.ok) throw new Error(await describeFailure(ins, "Could not submit your order"));
-          const row = (await ins.json())[0];
-          LAST = { ...payload, id: row?.id || "—", created_at: row?.created_at || new Date().toISOString() };
-        } catch (e2) {
-          err.textContent = e2.message || "Network request failed while submitting your order.";
-          err.classList.remove("hidden");
-          btn.disabled = false; btn.textContent = "Submit Order & Proof of Payment";
-          toast("Order could not be submitted", "error");
-          return;
-        }
-        btn.disabled = false; btn.textContent = "Submit Order & Proof of Payment";
-        $("#payModal").classList.add("hidden");
-        drawReceipt(LAST);
-        $("#receiptWhen").textContent = LAST.scheduled_label ? `Serve time: ${LAST.scheduled_label}` : "";
-        $("#receiptModal").classList.remove("hidden");
-        toast("Order placed — thank you!");
-      }
-
-      function drawReceipt(o) {
-        const c = $("#receiptCanvas"), g = c.getContext("2d");
-        g.fillStyle = "#FFFFFF"; g.fillRect(0, 0, c.width, c.height);
-        const grad = g.createLinearGradient(0, 0, c.width, 0);
-        grad.addColorStop(0, "#E43D30"); grad.addColorStop(0.5, "#F15A3C"); grad.addColorStop(1, "#F97316");
-        g.fillStyle = grad; g.fillRect(0, 0, c.width, 120);
-        g.fillStyle = "#FFFFFF"; g.font = "800 40px 'Plus Jakarta Sans', sans-serif";
-        g.fillText("HAWI", 40, 60); g.font = "500 18px Inter, sans-serif";
-        g.fillText("Ethiopian Kitchen — Order Receipt", 40, 92);
-
-        let y = 175;
-        g.fillStyle = "#777777"; g.font = "500 16px Inter, sans-serif";
-        g.fillText("Order ID", 40, y); g.fillText("Table", 40, y + 34); g.fillText("Placed", 40, y + 68);
-        g.fillText("Serve time", 40, y + 102);
-        g.fillStyle = "#111111"; g.font = "600 16px Inter, sans-serif";
-        g.fillText(String(o.id).slice(0, 28), 190, y); g.fillText(String(o.table_number), 190, y + 34);
-        g.fillText(new Date(o.created_at).toLocaleString(), 190, y + 68);
-        g.fillStyle = "#E43D30"; g.font = "700 16px Inter, sans-serif";
-        g.fillText(String(o.scheduled_label || "As soon as possible").slice(0, 34), 190, y + 102);
-
-        y += 150;
-        g.strokeStyle = "#E5E7EB"; g.beginPath(); g.moveTo(40, y); g.lineTo(600, y); g.stroke();
-        y += 36;
-        g.fillStyle = "#444444"; g.font = "700 18px 'Plus Jakarta Sans', sans-serif"; g.fillText("Items", 40, y);
-        y += 30;
-        g.font = "500 16px Inter, sans-serif";
-        o.items.forEach((i) => {
-          g.fillStyle = "#111111"; g.fillText(`${i.qty} x ${String(i.name).slice(0, 30)}`, 40, y);
-          g.fillStyle = "#444444";
-          const t = (i.price * i.qty).toFixed(2) + " ETB";
-          g.fillText(t, 600 - g.measureText(t).width, y);
-          y += 30;
-        });
-        y += 12;
-        g.strokeStyle = "#E5E7EB"; g.beginPath(); g.moveTo(40, y); g.lineTo(600, y); g.stroke();
-        y += 44;
-        g.fillStyle = "#111111"; g.font = "800 24px 'Plus Jakarta Sans', sans-serif"; g.fillText("Total", 40, y);
-        const tt = Number(o.total_amount).toFixed(2) + " ETB";
-        g.fillStyle = "#E43D30"; g.fillText(tt, 600 - g.measureText(tt).width, y);
-        y += 50;
-        g.fillStyle = "#777777"; g.font = "500 15px Inter, sans-serif";
-        g.fillText("Paid via Telebirr — awaiting confirmation.", 40, y);
-        g.fillStyle = "#111111"; g.font = "700 15px Inter, sans-serif";
-        g.fillText("Keep this ticket — show it to our staff on arrival.", 40, y + 26);
-        g.fillStyle = "#777777"; g.font = "500 15px Inter, sans-serif";
-        g.fillText("Thank you for dining with HAWI!", 40, y + 52);
-      }
-
-      $("#downloadReceipt").onclick = () => {
-        const url = $("#receiptCanvas").toDataURL("image/png");
-        const a = document.createElement("a");
-        a.href = url; a.download = `hawi-receipt-${String(LAST?.id || Date.now()).slice(0, 8)}.png`;
-        document.body.appendChild(a); a.click(); a.remove();
-        CART = {}; LAST = null; PROOF_FILE = null;
-        SCHED.date = null; SCHED.time = null; renderScheduler();
-        renderCart(); renderGrid();
-        $("#receiptModal").classList.add("hidden");
-        toast("Receipt saved — cart cleared");
-      };
-
-      renderCart();
-      renderScheduler();
-      observeReveals();
-      loadMenu();
-    </script>
-  </body>
+S.mer=now().getHours()>=12?"PM":"AM";
+if(S.mer==="PM"){$("pmBtn").classList.add("on");$("amBtn").classList.remove("on");}
+S.table=new URLSearchParams(window.location.search).get("table")||"";
+renderCart();loadMenu();
+setInterval(function(){
+  if(isToday()&&S.time&&S.time!=="ASAP"){var mins=fromHHMM(S.time);if(mins!=null&&mins<=nowMins())S.time=null;}
+  renderTimes();
+},30000);
+})();
+</script>
+</body>
 </html>
