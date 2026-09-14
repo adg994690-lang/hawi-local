@@ -210,8 +210,9 @@ canvas{width:100%;border:1px solid var(--cool);border-radius:12px;margin-top:16p
     <h3 style="font-size:20px">Order received!</h3>
     <p class="tiny muted mt">We're reviewing your payment proof now.</p>
     <p class="mt grad-text" style="font-weight:700;font-size:14px" id="rcSched"></p>
+    <p class="tiny muted mt" id="rcPaid"></p>
     <p class="box tiny muted mt">Please <strong style="color:var(--charcoal)">keep this ticket</strong> — download or screenshot it and show it to the staff when you arrive.</p>
-    <canvas id="rcCanvas" width="640" height="900"></canvas>
+    <canvas id="rcCanvas" width="640" height="1020"></canvas>
     <button class="btn-lg grad" style="margin-top:16px" id="dlReceipt">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
       Download Receipt
@@ -281,7 +282,7 @@ function buildAccounts(s){
 }
 
 /* ---------- state ---------- */
-var S={menu:[],filter:"All",query:"",cart:{},table:"",date:null,time:null,mer:"AM",accounts:[],selected:"",proof:null,proofUrl:"",receipt:null,copied:"",submitting:false,payError:""};
+var S={menu:[],filter:"All",query:"",cart:{},table:"",date:null,time:null,mer:"AM",accounts:[],selected:"",lastCopied:"",proof:null,proofUrl:"",receipt:null,copied:"",submitting:false,payError:""};
 var $=function(id){return document.getElementById(id);};
 
 function toast(msg,kind){
@@ -425,7 +426,7 @@ async function openPayment(){
   if(!S.date||!S.time){toast("Please choose the day and time first","error");return;}
   if(S.date<todayIso()){toast("That day has already passed — please pick a future day","error");return;}
   if(isToday()&&S.time!=="ASAP"){var mins=fromHHMM(S.time);if(mins!=null&&mins<=nowMins()){toast("That time has already passed — please pick a later time","error");S.time=null;renderCart();return;}}
-  S.proof=null;S.proofUrl="";S.payError="";
+  S.proof=null;S.proofUrl="";S.payError="";S.lastCopied="";
   openCart(false);openModal("payModal",true);
   $("payBody").innerHTML='<div class="center muted tiny" style="padding:40px 0">Loading payment details…</div>';
   try{
@@ -447,7 +448,7 @@ function renderPay(){
       '<p class="num">'+esc(a.number||"—")+'</p>'+(a.holder?'<p class="tiny muted">'+esc(a.holder)+'</p>':"")+'</button>'+
       (a.number?'<button class="copy" data-copy="'+esc(a.key)+'">'+(S.copied===a.key?ICON.check+"Copied":ICON.copy+"Copy")+'</button>':"")+'</div>';
   }).join("");
-  html+='<p class="tiny muted">Copy the number, send '+money(total())+' from your bank or Telebirr app, then upload the screenshot below.</p>';
+  html+='<p class="tiny muted">Copy the number of the option you want to pay with (the last one you copy is used on your ticket), send '+money(total())+' from your bank or Telebirr app, then upload the screenshot below.</p>';
   if(active&&active.kind==="telebirr"&&active.qr)html+='<div class="card center" style="padding:16px;margin-top:16px"><img src="'+esc(active.qr)+'" alt="Telebirr payment QR code" style="width:208px;height:208px;object-fit:contain;margin:0 auto;border-radius:12px" /></div>';
   html+='<div class="box row" style="margin-top:16px"><span class="tiny muted">Serve time</span><span style="font-size:14px;font-weight:600;text-align:right">'+esc(schedLabel())+'</span></div>';
   html+='<div style="margin-top:16px"><label style="display:block;font-size:14px;font-weight:600;margin-bottom:6px">Upload your payment screenshot</label>'+
@@ -465,12 +466,13 @@ function renderPay(){
 async function copyNum(acc){
   try{await navigator.clipboard.writeText(acc.number);}
   catch(e){var ta=document.createElement("textarea");ta.value=acc.number;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();}
-  S.copied=acc.key;renderPay();toast(acc.label+" number copied");
+  S.copied=acc.key;S.lastCopied=acc.key;S.selected=acc.key;renderPay();toast(acc.label+" number copied");
   setTimeout(function(){S.copied="";if($("payModal").classList.contains("open"))renderPay();},1800);
 }
 async function submitOrder(){
   if(!S.proof)return;
-  var acc=S.accounts.filter(function(a){return a.key===S.selected;})[0];
+  var payKey=S.lastCopied||S.selected;
+  var acc=S.accounts.filter(function(a){return a.key===payKey;})[0]||S.accounts.filter(function(a){return a.key===S.selected;})[0];
   S.submitting=true;S.payError="";renderPay();
   try{
     var ext=(S.proof.name.split(".").pop()||"png").toLowerCase();
@@ -479,13 +481,13 @@ async function submitOrder(){
     if(!up.ok)throw new Error(await describeFailure(up,"Could not upload your payment screenshot"));
     var publicUrl=SUPABASE_URL+"/storage/v1/object/public/payment-proofs/"+path;
     var payload={table_number:S.table||"Walk-in",items:cartItems(),total_amount:Number(total().toFixed(2)),status:"pending_review",
-      payment_method:acc&&acc.kind==="bank"?"bank:"+acc.label:"telebirr",payment_screenshot_url:publicUrl,
+      payment_method:(acc?(acc.kind==="bank"?"bank:":"")+acc.label+(acc.number?" "+acc.number:""):"telebirr"),payment_screenshot_url:publicUrl,
       scheduled_date:S.date,scheduled_time:S.time,scheduled_label:schedLabel()};
     var ins=await fetch(SUPABASE_URL+"/rest/v1/orders",{method:"POST",headers:Object.assign({},H,{"Content-Type":"application/json",Prefer:"return=representation"}),body:JSON.stringify(payload)});
     if(!ins.ok)throw new Error(await describeFailure(ins,"Could not submit your order"));
     var row=(await ins.json())[0]||{};
     S.submitting=false;
-    S.receipt=Object.assign({},payload,{paidTo:acc?acc.label+" — "+acc.number:"Telebirr",id:row.id||"—",created_at:row.created_at||new Date().toISOString()});
+    S.receipt=Object.assign({},payload,{paidTo:acc?acc.label+(acc.number?" — "+acc.number:""):"Telebirr",paidName:acc?acc.label:"Telebirr",paidNumber:acc&&acc.number?acc.number:"",paidHolder:acc&&acc.holder?acc.holder:"",id:row.id||"—",created_at:row.created_at||new Date().toISOString()});
     openModal("payModal",false);showReceipt();toast("Order placed — thank you!");
   }catch(e){S.submitting=false;S.payError=(e&&e.message)||"Network request failed while submitting your order.";renderPay();toast("Order could not be submitted","error");}
 }
@@ -494,6 +496,7 @@ async function submitOrder(){
 function showReceipt(){
   var r=S.receipt;if(!r)return;
   $("rcSched").textContent=r.scheduled_label?"Serve time: "+r.scheduled_label:"";
+  $("rcPaid").textContent="Paid: "+(r.paidName||"—")+(r.paidNumber?" — "+r.paidNumber:"");
   var c=$("rcCanvas"),g=c.getContext("2d");
   g.fillStyle="#FFFFFF";g.fillRect(0,0,c.width,c.height);
   var grad=g.createLinearGradient(0,0,c.width,0);grad.addColorStop(0,"#E43D30");grad.addColorStop(.5,"#F15A3C");grad.addColorStop(1,"#F97316");
@@ -516,8 +519,12 @@ function showReceipt(){
   y+=12;g.strokeStyle="#E5E7EB";g.beginPath();g.moveTo(40,y);g.lineTo(600,y);g.stroke();
   y+=44;g.fillStyle="#111";g.font="800 24px 'Plus Jakarta Sans', sans-serif";g.fillText("Total",40,y);
   var tt=Number(r.total_amount).toFixed(2)+" ETB";g.fillStyle="#E43D30";g.fillText(tt,600-g.measureText(tt).width,y);
-  y+=50;g.fillStyle="#777";g.font="500 15px Inter, sans-serif";
-  g.fillText(("Paid to "+r.paidTo+" — awaiting confirmation.").slice(0,58),40,y);
+  y+=48;g.fillStyle="#777";g.font="500 15px Inter, sans-serif";g.fillText("Paid with",40,y);
+  g.fillStyle="#111";g.font="700 17px 'Plus Jakarta Sans', sans-serif";g.fillText(String(r.paidName||"—").slice(0,34),150,y);
+  if(r.paidNumber){y+=26;g.fillStyle="#777";g.font="500 15px Inter, sans-serif";g.fillText("Account",40,y);
+    g.fillStyle="#111";g.font="700 17px Inter, sans-serif";g.fillText(String(r.paidNumber).slice(0,30),150,y);}
+  if(r.paidHolder){y+=24;g.fillStyle="#777";g.font="500 14px Inter, sans-serif";g.fillText("Name: "+String(r.paidHolder).slice(0,34),150,y);}
+  y+=30;g.fillStyle="#777";g.font="500 15px Inter, sans-serif";g.fillText("Payment awaiting confirmation.",40,y);
   g.fillStyle="#111";g.font="700 15px Inter, sans-serif";g.fillText("Keep this ticket — show it to our staff on arrival.",40,y+26);
   g.fillStyle="#777";g.font="500 15px Inter, sans-serif";g.fillText("Thank you for dining with HAWI!",40,y+52);
   openModal("receiptModal",true);
