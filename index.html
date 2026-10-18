@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>HAWI — Order Your Ethiopian Favourites</title>
-<meta name="description" content="Scan, browse and order authentic Ethiopian dishes at HAWI. Search by name or price, pay with Telebirr or a bank transfer and get an instant receipt." />
+<title>HAWI — Order & Pick Up</title>
+<meta name="description" content="Browse and order authentic Ethiopian dishes for pickup at HAWI. Search by name or price, pay with Telebirr or a bank transfer and get an instant receipt." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23F57C00'/%3E%3Ctext x='50' y='72' text-anchor='middle' font-family='Arial,sans-serif' font-size='70' font-weight='700' fill='white'%3EH%3C/text%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -45,19 +45,38 @@ header.hero{padding:112px 0 40px}
 .herobox h2{font-size:clamp(26px,5vw,46px);line-height:1.1;margin-top:8px;max-width:620px}
 .herobox p{margin-top:12px;opacity:.88;max-width:520px}
 main{padding-bottom:120px}
+
+.kindrow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 .catrow{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px}
-.chips{display:flex;flex-wrap:wrap;gap:8px;flex:1}
-.chip{border-radius:999px;padding:8px 16px;font-size:14px;font-weight:600;background:#fff;border:1px solid var(--cool);color:var(--midnight)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;flex:1;min-width:0}
+.chip{border-radius:999px;padding:8px 16px;font-size:14px;font-weight:600;background:#fff;border:1px solid var(--cool);color:var(--midnight);display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
 .chip.on{background-image:linear-gradient(90deg,#E43D30,#F15A3C,#F97316);color:#fff;border-color:transparent}
 .chip-sm{border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;background:#fff;border:1px solid var(--cool);color:var(--midnight)}
 .chip-sm.on{background-image:linear-gradient(90deg,#E43D30,#F15A3C,#F97316);color:#fff;border-color:transparent}
 .iconbtn{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;color:var(--brand);flex:none}
 .iconbtn:hover{background:rgba(228,61,48,.08)}
 .iconbtn.on{color:#fff;background-image:linear-gradient(90deg,#E43D30,#F15A3C,#F97316)}
+
+/* Search box and price filters open together when the search icon is clicked. */
 .searchbar{display:none;margin-bottom:20px}
-.searchbar.open{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--cool);border-radius:14px;padding:10px 14px}
-.searchbar input{flex:1;border:0;outline:none;font-size:15px;background:transparent}
+.searchbar.open{display:block;background:#fff;border:1px solid var(--cool);border-radius:14px;padding:12px 14px}
+.search-input-row{display:flex;align-items:center;gap:10px;min-width:0}
+.searchbar input{flex:1;min-width:0;border:0;outline:none;font-size:15px;background:transparent}
+.price-filters{display:flex;flex-direction:column;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid var(--cool)}
+.price-band-row{display:flex;flex-wrap:wrap;gap:8px}
+.price-custom-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.price-custom-row input{width:104px;max-width:calc(50% - 12px);border:1px solid var(--cool);border-radius:10px;background:#fff;padding:8px 10px;font-size:13px;outline:none}
+.price-custom-row input:focus{border-color:var(--brand)}
 .searchhint{font-size:12px;color:var(--steel);margin:-12px 0 20px}
+
+.dish-image-wrap{position:relative;overflow:hidden}
+.dish-image-wrap .tag{background:rgba(255,255,255,.86);color:var(--midnight);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-color:rgba(229,231,235,.9);max-width:calc(100% - 24px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dish-title-row{display:flex;align-items:flex-start;gap:10px}
+
+/* Simple black food/drink icons without a background or badge. */
+.kd{width:24px;height:24px;flex:0 0 24px;display:inline-flex;align-items:center;justify-content:center;color:#111;background:transparent}
+.kd svg{width:21px;height:21px;color:#111;stroke:currentColor}
+
 .card{background:#fff;border:1px solid var(--cool);border-radius:16px;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
 .card:hover{transform:translateY(-6px);box-shadow:0 20px 40px -10px rgba(228,61,48,.12)}
 .grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
@@ -102,6 +121,10 @@ aside .foot{border-top:1px solid var(--cool);padding:20px;display:flex;flex-dire
   nav{height:64px}
 }
 
+@media(max-width:480px){
+  .price-custom-row input{width:calc(50% - 8px);max-width:none}
+}
+
 .box{border:1px solid var(--cool);background:var(--cloud);border-radius:12px;padding:16px}
 .label{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--steel);margin-bottom:8px}
 .tinput{width:56px;border:1px solid var(--cool);border-radius:8px;background:#fff;padding:6px;text-align:center;font-size:14px}
@@ -125,7 +148,6 @@ aside .foot{border-top:1px solid var(--cool);padding:20px;display:flex;flex-dire
 canvas{width:100%;border:1px solid var(--cool);border-radius:12px;margin-top:16px}
 
 /* ---------- fixed developer attribution ---------- */
-/* This wrapper stays attached to the visible screen, not the end of the page. */
 .footer-attribution-row{
   position:fixed;
   right:max(12px,calc((100vw - 72rem) / 2 + 16px));
@@ -284,8 +306,10 @@ canvas{width:100%;border:1px solid var(--cool);border-radius:12px;margin-top:16p
         <p class="tiny muted">Ethiopian Kitchen</p>
       </div>
     </div>
+
     <div class="brandbox" style="gap:8px">
-      <span class="pill" id="tablePill">Walk-in</span>
+      <span class="pill" id="tablePill">Pickup</span>
+
       <button class="btn grad cartbtn" id="openCart" aria-label="Open cart">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="8" cy="21" r="1"/>
@@ -303,42 +327,81 @@ canvas{width:100%;border:1px solid var(--cool);border-radius:12px;margin-top:16p
     <div class="herobox grad">
       <div class="blob"></div>
       <p class="eyebrow">Fresh from our kitchen</p>
-      <h2>Authentic Ethiopian flavours, ordered from your table.</h2>
-      <p>Browse today's menu, build your order and pay with Telebirr or a bank transfer.</p>
+      <h2>Authentic Ethiopian flavours, ready for pickup.</h2>
+      <p>Browse today's menu, choose your pickup time, and pay with Telebirr or a bank transfer.</p>
     </div>
   </div>
 </header>
 
 <main class="wrap">
+
+  <!-- Food and drink type filters -->
+  <div class="kindrow chips" id="kindBar" aria-label="Filter by food or drink"></div>
+
+  <!-- Categories with the standalone search icon -->
   <div class="catrow">
     <div class="chips" id="cats"></div>
-    <button class="iconbtn" id="searchToggle" aria-label="Search the menu by name or price" title="Search by name or price">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+
+    <button
+      class="iconbtn"
+      id="searchToggle"
+      type="button"
+      aria-label="Show search and price filters"
+      title="Search and filter menu"
+      aria-expanded="false"
+      aria-controls="searchBar"
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="11" cy="11" r="7"/>
         <path d="m21 21-4.3-4.3"/>
       </svg>
     </button>
   </div>
 
+  <!-- Hidden until the search icon is clicked -->
   <div class="searchbar" id="searchBar">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="11" cy="11" r="7"/>
-      <path d="m21 21-4.3-4.3"/>
-    </svg>
-    <input id="searchInput" placeholder="Search by name or price — e.g. juice, 150, under 200" aria-label="Search dishes by name or price" />
-    <button class="iconbtn" id="clearSearch" aria-label="Clear search">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-        <path d="M18 6 6 18M6 6l12 12"/>
+    <div class="search-input-row">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m21 21-4.3-4.3"/>
       </svg>
-    </button>
+
+      <input
+        id="searchInput"
+        placeholder="Search by name or price — e.g. juice, 150, under 200"
+        aria-label="Search dishes by name or price"
+      />
+
+      <button class="iconbtn" id="clearSearch" type="button" aria-label="Clear search text" title="Clear search text">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="price-filters">
+      <p class="tiny muted" style="font-weight:700">Filter by price</p>
+
+      <div class="price-band-row" id="priceChips"></div>
+
+      <div class="price-custom-row">
+        <input id="pMin" type="number" min="0" placeholder="Min ETB" aria-label="Minimum price in ETB" />
+        <span class="tiny muted">to</span>
+        <input id="pMax" type="number" min="0" placeholder="Max ETB" aria-label="Maximum price in ETB" />
+        <button id="pApply" type="button" class="chip-sm on">Apply</button>
+        <button id="clearFilters" type="button" class="chip-sm">Clear filters</button>
+      </div>
+    </div>
   </div>
 
   <p class="searchhint" id="searchHint" style="display:none"></p>
+
   <div id="state" class="card state">
     <span class="spin">●</span>
     <h3 class="mt">Loading today's menu</h3>
     <p class="tiny muted">One moment please…</p>
   </div>
+
   <div class="grid" id="menu"></div>
 </main>
 
@@ -347,19 +410,24 @@ canvas{width:100%;border:1px solid var(--cool);border-radius:12px;margin-top:16p
 <aside id="cart">
   <div class="head">
     <h3>Your Order</h3>
+
     <button class="closebtn" id="closeCart" aria-label="Close cart">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
         <path d="M18 6 6 18M6 6l12 12"/>
       </svg>
     </button>
   </div>
+
   <div class="list" id="cartList"></div>
+
   <div class="foot">
     <div class="box">
       <p class="label">Choose your day</p>
       <div class="chips" id="days" style="margin-bottom:16px"></div>
+
       <p class="label">Choose your time</p>
       <div class="chips" id="times" style="margin-bottom:16px"></div>
+
       <p class="label">Or write your own time</p>
       <div class="chips" style="align-items:center;margin-bottom:0">
         <input class="tinput" id="mh" inputmode="numeric" placeholder="8" aria-label="Hour" />
@@ -369,13 +437,16 @@ canvas{width:100%;border:1px solid var(--cool);border-radius:12px;margin-top:16p
         <button class="chip-sm" id="pmBtn">PM</button>
         <button class="chip-sm" id="setTime" style="border-color:var(--brand);color:var(--brand)">Set time</button>
       </div>
+
       <p class="err" id="timeErr" style="display:none"></p>
-      <p class="tiny muted" style="margin-top:12px" id="schedNote">Pick a day and a time so the kitchen knows when to serve you.</p>
+      <p class="tiny muted" style="margin-top:12px" id="schedNote">Pick a day and time for your pickup.</p>
     </div>
+
     <div class="row tiny muted">
       <span>Total</span>
       <span class="price" style="color:var(--midnight);font-size:20px" id="cartTotal">0.00 ETB</span>
     </div>
+
     <button class="btn-lg grad" id="placeOrder" disabled>Place Order</button>
   </div>
 </aside>
@@ -384,12 +455,14 @@ canvas{width:100%;border:1px solid var(--cool);border-radius:12px;margin-top:16p
   <div class="sheet">
     <div class="row" style="margin-bottom:16px">
       <h3>Choose how to pay</h3>
+
       <button class="closebtn" id="closePay" aria-label="Close payment">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
           <path d="M18 6 6 18M6 6l12 12"/>
         </svg>
       </button>
     </div>
+
     <div id="payBody"></div>
   </div>
 </div>
@@ -401,12 +474,18 @@ canvas{width:100%;border:1px solid var(--cool);border-radius:12px;margin-top:16p
         <path d="M20 6 9 17l-5-5"/>
       </svg>
     </div>
+
     <h3 style="font-size:20px">Order received!</h3>
     <p class="tiny muted mt">We're reviewing your payment proof now.</p>
     <p class="mt grad-text" style="font-weight:700;font-size:14px" id="rcSched"></p>
     <p class="tiny muted mt" id="rcPaid"></p>
-    <p class="box tiny muted mt">Please <strong style="color:var(--charcoal)">keep this ticket</strong> — download or screenshot it and show it to the staff when you arrive.</p>
+
+    <p class="box tiny muted mt">
+      Please <strong style="color:var(--charcoal)">keep this pickup receipt</strong> — download or screenshot it and show it to staff when collecting your order.
+    </p>
+
     <canvas id="rcCanvas" width="640" height="1020"></canvas>
+
     <button class="btn-lg grad" style="margin-top:16px" id="dlReceipt">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 3v12"/>
@@ -431,6 +510,8 @@ var money=function(n){return (Number(n)||0).toFixed(2)+" ETB";};
 var esc=function(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});};
 
 var ICON={
+ food:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7a4 4 0 0 0 4 4h1V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v8h5Zm-5 0v7"/></svg>',
+ drink:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.5 13h-11L5 8Z"/><path d="M7 3h10l-1 5H8L7 3Z"/><path d="M9 3V1M15 3V1M12 12v4"/></svg>',
  minus:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg>',
  plus:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
  copy:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>',
@@ -551,10 +632,19 @@ function buildAccounts(s){
 
 /* ---------- state ---------- */
 var S={
- menu:[],filter:"All",query:"",cart:{},table:"",date:null,time:null,mer:"AM",
+ menu:[],filter:"All",kind:"all",query:"",priceBand:null,minPrice:null,maxPrice:null,
+ cart:{},date:null,time:null,mer:"AM",
  accounts:[],selected:"",lastCopied:"",proof:null,proofUrl:"",receipt:null,
  copied:"",submitting:false,payError:""
 };
+
+var PRICE_BANDS=[
+ {id:"u200",label:"Under 200",min:0,max:200},
+ {id:"200500",label:"200 – 500",min:200,max:500},
+ {id:"5001000",label:"500 – 1000",min:500,max:1000},
+ {id:"o1000",label:"Over 1000",min:1000,max:Infinity}
+];
+
 var $=function(id){return document.getElementById(id);};
 
 function toast(msg,kind){
@@ -597,13 +687,27 @@ function schedLabel(){
   return S.time==="ASAP"?day+" — as soon as possible":day+" at "+prettyTime(S.time);
 }
 
-/* ---------- search: name or price ---------- */
+/* ---------- item type and search/price matching ---------- */
+function itemKind(item){
+  return String(item&&item.kind||"").trim().toLowerCase()==="drink"?"drink":"food";
+}
+
 function matches(item){
+  var price=Number(item.price)||0;
+
+  if(S.minPrice!=null&&price<S.minPrice)return false;
+  if(S.maxPrice!=null&&price>S.maxPrice)return false;
+
+  if(S.priceBand){
+    var selectedBand=PRICE_BANDS.filter(function(b){return b.id===S.priceBand;})[0];
+    if(selectedBand&&(price<selectedBand.min||(selectedBand.max!==Infinity&&price>selectedBand.max)))return false;
+  }
+
   var q=S.query.trim().toLowerCase();
   if(!q)return true;
 
-  var price=Number(item.price)||0;
   var text=((item.name||"")+" "+(item.description||"")+" "+(item.category||"")).toLowerCase();
+
   var under=/^(under|below|less than|<|<=|max)\s*([\d.]+)$/.exec(q);
   if(under)return price<=Number(under[2]);
 
@@ -617,37 +721,85 @@ function matches(item){
     var n=Number(q);
     return price===n||String(price).indexOf(q)===0||price.toFixed(2).indexOf(q)>=0;
   }
+
   return text.indexOf(q)>=0;
 }
 
-/* ---------- menu ---------- */
+/* ---------- menu filters ---------- */
 function visible(){
-  var list=S.filter==="All"?S.menu:S.menu.filter(function(m){return m.category===S.filter;});
+  var list=S.filter==="All"?S.menu:S.menu.filter(function(m){
+    return String(m.category||"").toLowerCase()===String(S.filter).toLowerCase();
+  });
+
+  if(S.kind!=="all"){
+    list=list.filter(function(m){return itemKind(m)===S.kind;});
+  }
+
   return list.filter(matches);
 }
 
-function renderMenu(){
+function renderFilters(){
+  var foods=S.menu.filter(function(m){return itemKind(m)==="food";}).length;
+  var drinks=S.menu.filter(function(m){return itemKind(m)==="drink";}).length;
+
+  $("kindBar").innerHTML=
+    '<button type="button" class="chip'+(S.kind==="all"?" on":"")+'" data-kind="all">All ('+S.menu.length+')</button>'+
+    '<button type="button" class="chip'+(S.kind==="food"?" on":"")+'" data-kind="food">'+ICON.food+'Food ('+foods+')</button>'+
+    '<button type="button" class="chip'+(S.kind==="drink"?" on":"")+'" data-kind="drink">'+ICON.drink+'Drinks ('+drinks+')</button>';
+
   var cats=["All"];
-  S.menu.forEach(function(m){if(m.category&&cats.indexOf(m.category)<0)cats.push(m.category);});
+
+  S.menu.forEach(function(m){
+    if(m.category&&!cats.some(function(c){
+      return c.toLowerCase()===String(m.category).toLowerCase();
+    })){
+      cats.push(String(m.category));
+    }
+  });
+
   $("cats").innerHTML=S.menu.length?cats.map(function(c){
-    return '<button class="chip'+(c===S.filter?" on":"")+'" data-cat="'+esc(c)+'">'+esc(c)+'</button>';
+    var active=c.toLowerCase()===String(S.filter).toLowerCase();
+    return '<button type="button" class="chip'+(active?" on":"")+'" data-cat="'+esc(c)+'">'+esc(c)+'</button>';
   }).join(""):"";
+
+  $("priceChips").innerHTML=PRICE_BANDS.map(function(b){
+    return '<button type="button" class="chip-sm'+(S.priceBand===b.id?" on":"")+'" data-band="'+b.id+'">'+esc(b.label)+'</button>';
+  }).join("");
+}
+
+function renderMenu(){
+  renderFilters();
 
   var shown=visible();
   var hint=$("searchHint");
+  var anyFilter=S.kind!=="all"||S.filter!=="All"||S.priceBand!==null||S.minPrice!==null||S.maxPrice!==null;
+
   if(S.query.trim()){
     hint.style.display="";
     hint.textContent=shown.length
-      ?shown.length+" dish"+(shown.length===1?"":"es")+' match "'+S.query.trim()+'"'
-      :'Nothing matches "'+S.query.trim()+'" — try another name or price.';
-  }else hint.style.display="none";
+      ?shown.length+" item"+(shown.length===1?"":"s")+' match "'+S.query.trim()+'" and the selected filters.'
+      :'Nothing matches "'+S.query.trim()+'" with the selected filters — try another search or filter.';
+  }else if(anyFilter){
+    hint.style.display="";
+    hint.textContent=shown.length+" item"+(shown.length===1?"":"s")+" match the selected filters.";
+  }else{
+    hint.style.display="none";
+  }
 
-  $("menu").innerHTML=shown.map(function(m){
+  $("menu").innerHTML=shown.length?shown.map(function(m){
     var qty=(S.cart[m.id]||{}).qty||0;
-    return '<article class="card dish"><div style="position:relative">'+
-      (m.image_url?'<img src="'+esc(m.image_url)+'" alt="'+esc(m.name)+'" loading="lazy" />':'<div class="ph">🍽</div>')+
+    var kind=itemKind(m);
+    var kindLabel=kind==="drink"?"Drink":"Food";
+    var itemIcon=kind==="drink"?ICON.drink:ICON.food;
+
+    var img=m.image_url
+      ?'<img src="'+esc(m.image_url)+'" alt="'+esc(m.name)+'" loading="lazy" />'
+      :'<div class="ph">🍽</div>';
+
+    return '<article class="card dish"><div class="dish-image-wrap">'+img+
       '<span class="tag">'+esc(m.category||"Dish")+'</span></div>'+
-      '<div class="body"><h3 style="font-size:16px">'+esc(m.name)+'</h3>'+
+      '<div class="body"><div class="dish-title-row"><span class="kd" title="'+kindLabel+'" role="img" aria-label="'+kindLabel+'">'+itemIcon+'</span>'+
+      '<div style="flex:1;min-width:0"><h3 style="font-size:16px">'+esc(m.name)+'</h3></div></div>'+
       '<p class="tiny muted" style="flex:1">'+esc(m.description||"")+'</p>'+
       '<div class="row" style="padding-top:8px"><span class="price grad-text">'+money(m.price)+'</span>'+
       (qty
@@ -656,7 +808,16 @@ function renderMenu(){
           '<button class="step plus" data-inc="'+esc(m.id)+'" aria-label="Add one">'+ICON.plus+'</button></div>'
         :'<button class="btn grad" data-add="'+esc(m.id)+'">'+ICON.plus+'Add</button>')+
       '</div></div></article>';
-  }).join("");
+  }).join(""):'<div class="card state"><span style="font-size:26px">⌕</span><h3 class="mt">Nothing matches</h3><p class="tiny muted">Try another category, food/drink type, search, or price range.</p></div>';
+
+  $$(".dish-image-wrap img").forEach(function(img){
+    img.addEventListener("error",function(){
+      var placeholder=document.createElement("div");
+      placeholder.className="ph";
+      placeholder.textContent="🍽";
+      img.replaceWith(placeholder);
+    },{once:true});
+  });
 }
 
 function setState(title,text,icon){
@@ -678,10 +839,13 @@ async function loadMenu(){
   try{
     var res=await fetch(SUPABASE_URL+"/rest/v1/menus?select=*&is_active_today=eq.true&order=category.asc,name.asc",{headers:H});
     if(!res.ok)throw new Error(await describeFailure(res,"Could not load the menu"));
+
     var rows=await res.json();
     S.menu=Array.isArray(rows)?rows:[];
+
     if(S.menu.length)setState(null);
     else setState("No dishes yet","The kitchen hasn't published today's menu. Please check back shortly.","🍽");
+
     renderMenu();
   }catch(err){
     setState("Menu unavailable",(err&&err.message)||"Network request failed — please check your connection.","⚠");
@@ -704,9 +868,11 @@ function changeQty(id,delta,announce){
 
 function renderCart(){
   var items=cartItems();
+
   $("cartCount").style.display=count()?"grid":"none";
   $("cartCount").textContent=count();
-  $("tablePill").textContent=S.table?"Table "+S.table:"Walk-in";
+
+  $("tablePill").textContent="Pickup";
 
   $("cartList").innerHTML=items.length?items.map(function(i){
     return '<div class="card" style="padding:14px;display:flex;align-items:center;gap:10px"><div style="flex:1"><p style="font-weight:600;font-size:14px">'+esc(i.name)+'</p><p class="tiny muted">'+money(i.price)+' each</p></div>'+
@@ -716,9 +882,10 @@ function renderCart(){
 
   $("cartTotal").textContent=money(total());
   $("placeOrder").disabled=!items.length||!S.date||!S.time;
+
   $("schedNote").textContent=(S.date&&S.time)
-    ?"We'll serve your order: "+schedLabel()
-    :"Pick a day and a time so the kitchen knows when to serve you.";
+    ?"Your pickup is scheduled for: "+schedLabel()
+    :"Pick a day and time for your pickup.";
 
   renderDays();
   renderTimes();
@@ -733,6 +900,7 @@ function renderDays(){
 function renderTimes(){
   var slots=isToday()?BASE_SLOTS.filter(function(m){return m>nowMins();}):BASE_SLOTS;
   var html='<button class="chip-sm'+(S.time==="ASAP"?" on":"")+'" data-time="ASAP">ASAP</button>';
+
   html+=slots.map(function(m){
     var t=toHHMM(m);
     return '<button class="chip-sm'+(S.time===t?" on":"")+'" data-time="'+t+'">'+fmt12(m)+'</button>';
@@ -741,6 +909,7 @@ function renderTimes(){
   if(isToday()&&!slots.length){
     html+='<span class="tiny muted">No later times left today — pick another day or choose ASAP.</span>';
   }
+
   $("times").innerHTML=html;
 }
 
@@ -753,7 +922,12 @@ function showTimeErr(msg){
 
 function applyManualTime(){
   var h=Number($("mh").value),mn=$("mm").value===""?0:Number($("mm").value);
-  if(!S.date){showTimeErr("Please choose the day first.");return;}
+
+  if(!S.date){
+    showTimeErr("Please choose the day first.");
+    return;
+  }
+
   if(!Number.isInteger(h)||h<1||h>12||!Number.isInteger(mn)||mn<0||mn>59){
     showTimeErr("Enter an hour from 1 to 12 and minutes from 00 to 59.");
     return;
@@ -778,7 +952,7 @@ function applyManualTime(){
 
   S.time=toHHMM(mins);
   showTimeErr("");
-  toast("Serve time set to "+fmt12(mins));
+  toast("Pickup time set to "+fmt12(mins));
   renderCart();
 }
 
@@ -811,6 +985,7 @@ async function openPayment(){
   S.proofUrl="";
   S.payError="";
   S.lastCopied="";
+
   openCart(false);
   openModal("payModal",true);
   $("payBody").innerHTML='<div class="center muted tiny" style="padding:40px 0">Loading payment details…</div>';
@@ -818,6 +993,7 @@ async function openPayment(){
   try{
     var res=await fetch(SUPABASE_URL+"/rest/v1/payment_settings?select=*&id=eq.1",{headers:H});
     if(!res.ok)throw new Error(await describeFailure(res,"Could not load payment details"));
+
     var s=(await res.json())[0]||{};
     S.accounts=buildAccounts(s);
   }catch(err){
@@ -831,6 +1007,7 @@ async function openPayment(){
 
 function renderPay(){
   var active=S.accounts.filter(function(a){return a.key===S.selected;})[0];
+
   var html='<div class="box row" style="margin-bottom:16px"><span class="tiny muted">Amount due</span><span class="price grad-text" style="font-size:20px">'+money(total())+'</span></div>';
   html+='<p class="label">Payment options</p>';
 
@@ -847,7 +1024,7 @@ function renderPay(){
     html+='<div class="card center" style="padding:16px;margin-top:16px"><img src="'+esc(active.qr)+'" alt="Telebirr payment QR code" style="width:208px;height:208px;object-fit:contain;margin:0 auto;border-radius:12px" /></div>';
   }
 
-  html+='<div class="box row" style="margin-top:16px"><span class="tiny muted">Serve time</span><span style="font-size:14px;font-weight:600;text-align:right">'+esc(schedLabel())+'</span></div>';
+  html+='<div class="box row" style="margin-top:16px"><span class="tiny muted">Pickup time</span><span style="font-size:14px;font-weight:600;text-align:right">'+esc(schedLabel())+'</span></div>';
 
   html+='<div style="margin-top:16px"><label style="display:block;font-size:14px;font-weight:600;margin-bottom:6px">Upload your payment screenshot</label>'+
     '<input class="file" type="file" accept="image/*" id="proofInput" />'+
@@ -918,7 +1095,7 @@ async function submitOrder(){
 
     var publicUrl=SUPABASE_URL+"/storage/v1/object/public/payment-proofs/"+path;
     var payload={
-      table_number:S.table||"Walk-in",
+      table_number:"Pickup",
       items:cartItems(),
       total_amount:Number(total().toFixed(2)),
       status:"pending_review",
@@ -938,6 +1115,7 @@ async function submitOrder(){
     if(!ins.ok)throw new Error(await describeFailure(ins,"Could not submit your order"));
 
     var row=(await ins.json())[0]||{};
+
     S.submitting=false;
     S.receipt=Object.assign({},payload,{
       paidTo:acc?acc.label+(acc.number?" — "+acc.number:""):"Telebirr",
@@ -964,7 +1142,7 @@ function showReceipt(){
   var r=S.receipt;
   if(!r)return;
 
-  $("rcSched").textContent=r.scheduled_label?"Serve time: "+r.scheduled_label:"";
+  $("rcSched").textContent=r.scheduled_label?"Pickup time: "+r.scheduled_label:"";
   $("rcPaid").textContent="Paid: "+(r.paidName||"—")+(r.paidNumber?" — "+r.paidNumber:"");
 
   var c=$("rcCanvas"),g=c.getContext("2d");
@@ -988,9 +1166,9 @@ function showReceipt(){
   g.fillStyle="#777";
   g.font="500 16px Inter, sans-serif";
   g.fillText("Order ID",40,y);
-  g.fillText("Table",40,y+34);
+  g.fillText("Order type",40,y+34);
   g.fillText("Placed",40,y+68);
-  g.fillText("Serve time",40,y+102);
+  g.fillText("Pickup time",40,y+102);
 
   g.fillStyle="#111";
   g.font="600 16px Inter, sans-serif";
@@ -1073,10 +1251,10 @@ function showReceipt(){
   g.fillText("Payment awaiting confirmation.",40,y);
   g.fillStyle="#111";
   g.font="700 15px Inter, sans-serif";
-  g.fillText("Keep this ticket — show it to our staff on arrival.",40,y+26);
+  g.fillText("Show this pickup receipt to staff when collecting your order.",40,y+26);
   g.fillStyle="#777";
   g.font="500 15px Inter, sans-serif";
-  g.fillText("Thank you for dining with HAWI!",40,y+52);
+  g.fillText("Thank you for ordering with HAWI!",40,y+52);
 
   openModal("receiptModal",true);
 }
@@ -1103,19 +1281,32 @@ function downloadReceipt(){
   toast("Receipt saved — cart cleared");
 }
 
-/* ---------- search UI ---------- */
+/* ---------- search and filter panel ---------- */
 function toggleSearch(force){
   var bar=$("searchBar");
   var open=force!=null?force:!bar.classList.contains("open");
+
   bar.classList.toggle("open",open);
   $("searchToggle").classList.toggle("on",open);
+  $("searchToggle").setAttribute("aria-expanded",String(open));
+  $("searchToggle").setAttribute("aria-label",open?"Hide search and price filters":"Show search and price filters");
 
   if(open)$("searchInput").focus();
-  else{
-    S.query="";
-    $("searchInput").value="";
-    renderMenu();
-  }
+}
+
+function clearAllFilters(){
+  S.filter="All";
+  S.kind="all";
+  S.query="";
+  S.priceBand=null;
+  S.minPrice=null;
+  S.maxPrice=null;
+
+  $("searchInput").value="";
+  $("pMin").value="";
+  $("pMax").value="";
+
+  renderMenu();
 }
 
 /* ---------- events ---------- */
@@ -1123,7 +1314,38 @@ document.addEventListener("click",function(e){
   var t=e.target.closest("button");
   if(!t)return;
 
-  if(t.dataset.cat){S.filter=t.dataset.cat;renderMenu();return;}
+  if(t.dataset.kind){
+    S.kind=t.dataset.kind;
+    renderMenu();
+    return;
+  }
+
+  if(t.dataset.cat){
+    S.filter=t.dataset.cat;
+    renderMenu();
+    return;
+  }
+
+  if(t.dataset.band){
+    var band=PRICE_BANDS.filter(function(b){return b.id===t.dataset.band;})[0];
+    if(!band)return;
+
+    if(S.priceBand===band.id){
+      S.priceBand=null;
+      S.minPrice=null;
+      S.maxPrice=null;
+    }else{
+      S.priceBand=band.id;
+      S.minPrice=band.min;
+      S.maxPrice=band.max===Infinity?null:band.max;
+    }
+
+    $("pMin").value="";
+    $("pMax").value="";
+    renderMenu();
+    return;
+  }
+
   if(t.dataset.add){changeQty(t.dataset.add,1,true);return;}
   if(t.dataset.inc){changeQty(t.dataset.inc,1);return;}
   if(t.dataset.dec){changeQty(t.dataset.dec,-1);return;}
@@ -1145,10 +1367,60 @@ $("closePay").addEventListener("click",function(){openModal("payModal",false);})
 $("placeOrder").addEventListener("click",openPayment);
 $("dlReceipt").addEventListener("click",downloadReceipt);
 $("setTime").addEventListener("click",applyManualTime);
-$("searchToggle").addEventListener("click",function(){toggleSearch();});
-$("clearSearch").addEventListener("click",function(){toggleSearch(false);});
-$("searchInput").addEventListener("input",function(e){S.query=e.target.value;renderMenu();});
-$("searchInput").addEventListener("keydown",function(e){if(e.key==="Escape")toggleSearch(false);});
+
+$("searchToggle").addEventListener("click",function(){
+  toggleSearch();
+});
+
+$("clearSearch").addEventListener("click",function(){
+  S.query="";
+  $("searchInput").value="";
+  renderMenu();
+
+  if($("searchBar").classList.contains("open")){
+    $("searchInput").focus();
+  }
+});
+
+$("searchInput").addEventListener("input",function(e){
+  S.query=e.target.value;
+  renderMenu();
+});
+
+$("searchInput").addEventListener("keydown",function(e){
+  if(e.key==="Escape")toggleSearch(false);
+});
+
+$("pApply").addEventListener("click",function(){
+  var minRaw=$("pMin").value.trim();
+  var maxRaw=$("pMax").value.trim();
+
+  var min=minRaw===""?null:Number(minRaw);
+  var max=maxRaw===""?null:Number(maxRaw);
+
+  if(min!==null&&(!Number.isFinite(min)||min<0)){
+    toast("Enter a valid minimum price","error");
+    return;
+  }
+
+  if(max!==null&&(!Number.isFinite(max)||max<0)){
+    toast("Enter a valid maximum price","error");
+    return;
+  }
+
+  if(min!==null&&max!==null&&min>max){
+    toast("Minimum price cannot be greater than maximum price","error");
+    return;
+  }
+
+  S.minPrice=min;
+  S.maxPrice=max;
+  S.priceBand=null;
+
+  renderMenu();
+});
+
+$("clearFilters").addEventListener("click",clearAllFilters);
 
 $("amBtn").addEventListener("click",function(){
   S.mer="AM";
@@ -1174,7 +1446,6 @@ if(S.mer==="PM"){
   $("amBtn").classList.remove("on");
 }
 
-S.table=new URLSearchParams(window.location.search).get("table")||"";
 renderCart();
 loadMenu();
 
@@ -1189,9 +1460,7 @@ setInterval(function(){
 })();
 </script>
 
-<!-- EDDY TECH DEVELOPER ATTRIBUTION
-     The markup is at the bottom of the HTML, but the CSS above
-     pins this wrapper to the visible screen while the page scrolls. -->
+<!-- EDDY TECH DEVELOPER ATTRIBUTION -->
 <footer class="mx-auto w-full max-w-6xl px-4">
   <div class="footer-attribution-row">
     <div class="developer-attribution">
@@ -1200,6 +1469,7 @@ setInterval(function(){
         <span class="brand-divider">|</span>
         <strong class="brand-tech">EDDY TECH</strong>
       </span>
+
       <div class="eddy-mark" aria-label="EDDY TECH animated verification symbol" role="img">
         <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <path class="em-outline" d="M43 69 H35 C24 69 19 61 22 51 C24 43 31 39 39 40 C42 26 54 19 66 23 C75 25 80 32 81 40 C91 41 97 49 95 58 C94 65 88 69 80 69 H76" fill="none" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
