@@ -417,3 +417,803 @@ canvas{width:100%;border:1px solid var(--cool);border-radius:12px;margin-top:16p
     </button>
   </div>
 </div>
+
+<div id="toasts"></div>
+
+<script>
+(function(){
+"use strict";
+
+var SUPABASE_URL="https://jqyrjrhwgintuxhsxpsu.supabase.co";
+var SUPABASE_KEY="sb_publishable_i_TU_cb2C3TitU9wGAyHmw_cX5cPKMi";
+var H={apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY};
+var money=function(n){return (Number(n)||0).toFixed(2)+" ETB";};
+var esc=function(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});};
+
+var ICON={
+ minus:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg>',
+ plus:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+ copy:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>',
+ check:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+};
+
+var DAY_NAMES=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+var BASE_SLOTS=[];
+for(var m=11*60;m<=21*60;m+=30)BASE_SLOTS.push(m);
+
+var BANK_NAMES={
+ CBE:"CBE (Commercial Bank of Ethiopia)",
+ CBA:"CBA Bank",
+ AWASH:"Awash Bank",
+ DASHEN:"Dashen Bank",
+ ABYSSINIA:"Bank of Abyssinia",
+ BOA:"Bank of Abyssinia",
+ WEGAGEN:"Wegagen Bank",
+ NIB:"Nib Bank",
+ OROMIA:"Oromia Bank",
+ ZEMEN:"Zemen Bank",
+ AMHARA:"Amhara Bank",
+ TELEBIRR:"Telebirr",
+ TLEBIR:"Telebirr",
+ TLE:"Telebirr"
+};
+
+var DEFAULT_BANKS=[
+ {key:"cba",kind:"bank",label:"CBA Bank",number:"10015455455545"},
+ {key:"awash",kind:"bank",label:"Awash Bank",number:"17888555666"}
+];
+
+function fmt12(mins){
+  var h24=Math.floor(mins/60),mn=mins%60,ap=h24>=12?"PM":"AM",h12=h24%12===0?12:h24%12;
+  return h12+":"+String(mn).padStart(2,"0")+" "+ap;
+}
+function toHHMM(mins){
+  return String(Math.floor(mins/60)).padStart(2,"0")+":"+String(mins%60).padStart(2,"0");
+}
+function fromHHMM(t){
+  var m=/^(\d{1,2}):(\d{2})$/.exec(t||"");
+  return m?Number(m[1])*60+Number(m[2]):null;
+}
+function prettyTime(t){
+  if(!t)return"";
+  if(t==="ASAP")return"as soon as possible";
+  var mins=fromHHMM(t);
+  return mins==null?t:fmt12(mins);
+}
+function isoOf(d){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+function parseAccountBlob(text,holder){
+  return String(text).split(/[\s,;\n]+/).map(function(t){return t.trim();})
+   .filter(function(t){return /\d{5,}|\*{3,}/.test(t);})
+   .map(function(token,i){
+     var m=/^([A-Za-z]+)?\s*([+\d*\-]{5,})$/.exec(token);
+     var rawLabel=((m&&m[1])||"").toUpperCase();
+     var number=((m&&m[2])||token).trim();
+     var label=BANK_NAMES[rawLabel]||(rawLabel?rawLabel:"Account");
+     return {
+       key:"acc-"+i+"-"+number,
+       kind:label==="Telebirr"?"telebirr":"bank",
+       label:label,
+       holder:holder,
+       number:number
+     };
+   });
+}
+
+function buildAccounts(s){
+  s=s||{};
+  var out=[];
+  var blob=String(s.telebirr_number||"").trim();
+  var holder=s.telebirr_name||"";
+
+  if(blob)out=out.concat(parseAccountBlob(blob,holder));
+  if(!out.length&&s.telebirr_qr_url){
+    out.push({key:"telebirr",kind:"telebirr",label:"Telebirr",holder:holder,number:""});
+  }
+  if(s.telebirr_qr_url){
+    for(var i=0;i<out.length;i++){
+      if(out[i].kind==="telebirr"){out[i].qr=s.telebirr_qr_url;break;}
+    }
+  }
+
+  var raw=s.bank_accounts!=null?s.bank_accounts:(s.banks!=null?s.banks:null);
+  var list=[];
+  if(Array.isArray(raw))list=raw;
+  else if(typeof raw==="string"){
+    try{
+      var p=JSON.parse(raw);
+      if(Array.isArray(p))list=p;
+    }catch(e){
+      list=raw.split(/[\n;]+/).map(function(l){return l.trim();}).filter(Boolean).map(function(l){
+        var mm=/^(.*?)[:\s]+([\d\s-]{5,})$/.exec(l);
+        return mm?{bank:mm[1],account:mm[2]}:null;
+      }).filter(Boolean);
+    }
+  }
+
+  list.forEach(function(b,i){
+    var number=String(b.account||b.account_number||b.number||"").trim();
+    if(!number)return;
+    out.push({
+      key:"bank-"+i,
+      kind:"bank",
+      label:String(b.bank||b.name||b.label||"Bank"),
+      holder:b.holder||b.account_name||"",
+      number:number
+    });
+  });
+
+  if(!out.some(function(a){return a.kind==="bank";}))out=out.concat(DEFAULT_BANKS);
+  return out;
+}
+
+/* ---------- state ---------- */
+var S={
+ menu:[],filter:"All",query:"",cart:{},table:"",date:null,time:null,mer:"AM",
+ accounts:[],selected:"",lastCopied:"",proof:null,proofUrl:"",receipt:null,
+ copied:"",submitting:false,payError:""
+};
+var $=function(id){return document.getElementById(id);};
+
+function toast(msg,kind){
+  var d=document.createElement("div");
+  d.className="toast"+(kind==="error"?" error":"");
+  d.textContent=msg;
+  $("toasts").appendChild(d);
+  setTimeout(function(){d.remove();},3000);
+}
+
+function now(){return new Date();}
+function todayIso(){return isoOf(now());}
+function nowMins(){var n=now();return n.getHours()*60+n.getMinutes();}
+function isToday(){return S.date===todayIso();}
+
+function dayOptions(){
+  var out=[];
+  for(var i=0;i<5;i++){
+    var d=new Date();
+    d.setHours(12,0,0,0);
+    d.setDate(d.getDate()+i);
+    out.push({
+      iso:isoOf(d),
+      label:i===0?"Today":i===1?"Tomorrow":DAY_NAMES[d.getDay()],
+      sub:d.toLocaleDateString(undefined,{day:"numeric",month:"short"})
+    });
+  }
+  return out;
+}
+var DAYS=dayOptions();
+
+function cartItems(){return Object.keys(S.cart).map(function(k){return S.cart[k];});}
+function total(){return cartItems().reduce(function(s,i){return s+i.price*i.qty;},0);}
+function count(){return cartItems().reduce(function(s,i){return s+i.qty;},0);}
+
+function schedLabel(){
+  if(!S.date||!S.time)return"";
+  var d=DAYS.filter(function(x){return x.iso===S.date;})[0];
+  var day=d?d.label+" ("+d.sub+")":S.date;
+  return S.time==="ASAP"?day+" — as soon as possible":day+" at "+prettyTime(S.time);
+}
+
+/* ---------- search: name or price ---------- */
+function matches(item){
+  var q=S.query.trim().toLowerCase();
+  if(!q)return true;
+
+  var price=Number(item.price)||0;
+  var text=((item.name||"")+" "+(item.description||"")+" "+(item.category||"")).toLowerCase();
+  var under=/^(under|below|less than|<|<=|max)\s*([\d.]+)$/.exec(q);
+  if(under)return price<=Number(under[2]);
+
+  var over=/^(over|above|more than|>|>=|min)\s*([\d.]+)$/.exec(q);
+  if(over)return price>=Number(over[2]);
+
+  var range=/^([\d.]+)\s*(?:-|to)\s*([\d.]+)$/.exec(q);
+  if(range)return price>=Number(range[1])&&price<=Number(range[2]);
+
+  if(/^[\d.]+$/.test(q)){
+    var n=Number(q);
+    return price===n||String(price).indexOf(q)===0||price.toFixed(2).indexOf(q)>=0;
+  }
+  return text.indexOf(q)>=0;
+}
+
+/* ---------- menu ---------- */
+function visible(){
+  var list=S.filter==="All"?S.menu:S.menu.filter(function(m){return m.category===S.filter;});
+  return list.filter(matches);
+}
+
+function renderMenu(){
+  var cats=["All"];
+  S.menu.forEach(function(m){if(m.category&&cats.indexOf(m.category)<0)cats.push(m.category);});
+  $("cats").innerHTML=S.menu.length?cats.map(function(c){
+    return '<button class="chip'+(c===S.filter?" on":"")+'" data-cat="'+esc(c)+'">'+esc(c)+'</button>';
+  }).join(""):"";
+
+  var shown=visible();
+  var hint=$("searchHint");
+  if(S.query.trim()){
+    hint.style.display="";
+    hint.textContent=shown.length
+      ?shown.length+" dish"+(shown.length===1?"":"es")+' match "'+S.query.trim()+'"'
+      :'Nothing matches "'+S.query.trim()+'" — try another name or price.';
+  }else hint.style.display="none";
+
+  $("menu").innerHTML=shown.map(function(m){
+    var qty=(S.cart[m.id]||{}).qty||0;
+    return '<article class="card dish"><div style="position:relative">'+
+      (m.image_url?'<img src="'+esc(m.image_url)+'" alt="'+esc(m.name)+'" loading="lazy" />':'<div class="ph">🍽</div>')+
+      '<span class="tag">'+esc(m.category||"Dish")+'</span></div>'+
+      '<div class="body"><h3 style="font-size:16px">'+esc(m.name)+'</h3>'+
+      '<p class="tiny muted" style="flex:1">'+esc(m.description||"")+'</p>'+
+      '<div class="row" style="padding-top:8px"><span class="price grad-text">'+money(m.price)+'</span>'+
+      (qty
+        ?'<div class="stepper"><button class="step" data-dec="'+esc(m.id)+'" aria-label="Remove one">'+ICON.minus+'</button>'+
+          '<span class="stepnum">'+qty+'</span>'+
+          '<button class="step plus" data-inc="'+esc(m.id)+'" aria-label="Add one">'+ICON.plus+'</button></div>'
+        :'<button class="btn grad" data-add="'+esc(m.id)+'">'+ICON.plus+'Add</button>')+
+      '</div></div></article>';
+  }).join("");
+}
+
+function setState(title,text,icon){
+  if(!title){$("state").style.display="none";return;}
+  $("state").style.display="";
+  $("state").innerHTML=(icon==="spin"
+    ?'<span class="spin">●</span>'
+    :'<span style="font-size:26px">'+(icon||"🍽")+'</span>')+
+    '<h3 class="mt">'+esc(title)+'</h3><p class="tiny muted">'+esc(text)+'</p>';
+}
+
+async function describeFailure(res,what){
+  var b="";
+  try{b=(await res.text()).slice(0,220);}catch(e){}
+  return what+" — "+res.status+" "+res.statusText+(b?": "+b:"");
+}
+
+async function loadMenu(){
+  try{
+    var res=await fetch(SUPABASE_URL+"/rest/v1/menus?select=*&is_active_today=eq.true&order=category.asc,name.asc",{headers:H});
+    if(!res.ok)throw new Error(await describeFailure(res,"Could not load the menu"));
+    var rows=await res.json();
+    S.menu=Array.isArray(rows)?rows:[];
+    if(S.menu.length)setState(null);
+    else setState("No dishes yet","The kitchen hasn't published today's menu. Please check back shortly.","🍽");
+    renderMenu();
+  }catch(err){
+    setState("Menu unavailable",(err&&err.message)||"Network request failed — please check your connection.","⚠");
+  }
+}
+
+/* ---------- cart ---------- */
+function changeQty(id,delta,announce){
+  var item=S.menu.filter(function(m){return m.id===id;})[0];
+  if(!item)return;
+
+  var next=((S.cart[id]||{}).qty||0)+delta;
+  if(next<=0)delete S.cart[id];
+  else S.cart[id]={id:item.id,name:item.name,price:Number(item.price),qty:next};
+
+  if(announce)toast(item.name+" added to cart");
+  renderMenu();
+  renderCart();
+}
+
+function renderCart(){
+  var items=cartItems();
+  $("cartCount").style.display=count()?"grid":"none";
+  $("cartCount").textContent=count();
+  $("tablePill").textContent=S.table?"Table "+S.table:"Walk-in";
+
+  $("cartList").innerHTML=items.length?items.map(function(i){
+    return '<div class="card" style="padding:14px;display:flex;align-items:center;gap:10px"><div style="flex:1"><p style="font-weight:600;font-size:14px">'+esc(i.name)+'</p><p class="tiny muted">'+money(i.price)+' each</p></div>'+
+      '<div class="stepper"><button class="step sm" data-dec="'+esc(i.id)+'" aria-label="Remove one">'+ICON.minus+'</button><span class="stepnum">'+i.qty+'</span><button class="step sm plus" data-inc="'+esc(i.id)+'" aria-label="Add one">'+ICON.plus+'</button></div>'+
+      '<span class="price" style="width:92px;text-align:right;font-size:14px">'+money(i.price*i.qty)+'</span></div>';
+  }).join(""):'<div class="center muted tiny" style="padding:60px 0">Your cart is empty.</div>';
+
+  $("cartTotal").textContent=money(total());
+  $("placeOrder").disabled=!items.length||!S.date||!S.time;
+  $("schedNote").textContent=(S.date&&S.time)
+    ?"We'll serve your order: "+schedLabel()
+    :"Pick a day and a time so the kitchen knows when to serve you.";
+
+  renderDays();
+  renderTimes();
+}
+
+function renderDays(){
+  $("days").innerHTML=DAYS.map(function(d){
+    return '<button class="chip-sm'+(S.date===d.iso?" on":"")+'" data-day="'+d.iso+'">'+esc(d.label)+' · '+esc(d.sub)+'</button>';
+  }).join("");
+}
+
+function renderTimes(){
+  var slots=isToday()?BASE_SLOTS.filter(function(m){return m>nowMins();}):BASE_SLOTS;
+  var html='<button class="chip-sm'+(S.time==="ASAP"?" on":"")+'" data-time="ASAP">ASAP</button>';
+  html+=slots.map(function(m){
+    var t=toHHMM(m);
+    return '<button class="chip-sm'+(S.time===t?" on":"")+'" data-time="'+t+'">'+fmt12(m)+'</button>';
+  }).join("");
+
+  if(isToday()&&!slots.length){
+    html+='<span class="tiny muted">No later times left today — pick another day or choose ASAP.</span>';
+  }
+  $("times").innerHTML=html;
+}
+
+function showTimeErr(msg){
+  var e=$("timeErr");
+  if(!msg){e.style.display="none";return;}
+  e.style.display="";
+  e.textContent=msg;
+}
+
+function applyManualTime(){
+  var h=Number($("mh").value),mn=$("mm").value===""?0:Number($("mm").value);
+  if(!S.date){showTimeErr("Please choose the day first.");return;}
+  if(!Number.isInteger(h)||h<1||h>12||!Number.isInteger(mn)||mn<0||mn>59){
+    showTimeErr("Enter an hour from 1 to 12 and minutes from 00 to 59.");
+    return;
+  }
+
+  var h24=h%12;
+  if(S.mer==="PM")h24+=12;
+  var mins=h24*60+mn;
+
+  if(isToday()&&mins===nowMins()){
+    S.time="ASAP";
+    showTimeErr("");
+    toast("That's right now — set to as soon as possible");
+    renderCart();
+    return;
+  }
+
+  if(isToday()&&mins<nowMins()){
+    showTimeErr("That time has already passed today. Please pick a later time or another day.");
+    return;
+  }
+
+  S.time=toHHMM(mins);
+  showTimeErr("");
+  toast("Serve time set to "+fmt12(mins));
+  renderCart();
+}
+
+/* ---------- payment ---------- */
+function openCart(open){
+  $("cart").classList.toggle("open",open);
+  $("overlay").style.display=open?"block":"none";
+}
+
+function openModal(id,open){
+  $(id).classList.toggle("open",open);
+}
+
+async function openPayment(){
+  if(!cartItems().length)return;
+  if(!S.date||!S.time){toast("Please choose the day and time first","error");return;}
+  if(S.date<todayIso()){toast("That day has already passed — please pick a future day","error");return;}
+
+  if(isToday()&&S.time!=="ASAP"){
+    var mins=fromHHMM(S.time);
+    if(mins!=null&&mins<=nowMins()){
+      toast("That time has already passed — please pick a later time","error");
+      S.time=null;
+      renderCart();
+      return;
+    }
+  }
+
+  S.proof=null;
+  S.proofUrl="";
+  S.payError="";
+  S.lastCopied="";
+  openCart(false);
+  openModal("payModal",true);
+  $("payBody").innerHTML='<div class="center muted tiny" style="padding:40px 0">Loading payment details…</div>';
+
+  try{
+    var res=await fetch(SUPABASE_URL+"/rest/v1/payment_settings?select=*&id=eq.1",{headers:H});
+    if(!res.ok)throw new Error(await describeFailure(res,"Could not load payment details"));
+    var s=(await res.json())[0]||{};
+    S.accounts=buildAccounts(s);
+  }catch(err){
+    S.accounts=buildAccounts({});
+    S.payError=(err&&err.message)||"Could not load payment details.";
+  }
+
+  S.selected=(S.accounts[0]||{}).key||"";
+  renderPay();
+}
+
+function renderPay(){
+  var active=S.accounts.filter(function(a){return a.key===S.selected;})[0];
+  var html='<div class="box row" style="margin-bottom:16px"><span class="tiny muted">Amount due</span><span class="price grad-text" style="font-size:20px">'+money(total())+'</span></div>';
+  html+='<p class="label">Payment options</p>';
+
+  html+=S.accounts.map(function(a){
+    return '<div class="acc'+(a.key===S.selected?" on":"")+'"><button class="info" data-sel="'+esc(a.key)+'">'+
+      '<p style="font-size:14px;font-weight:700">'+esc(a.label)+(a.kind==="telebirr"?" (mobile money)":" (bank transfer)")+'</p>'+
+      '<p class="num">'+esc(a.number||"—")+'</p>'+(a.holder?'<p class="tiny muted">'+esc(a.holder)+'</p>':"")+'</button>'+
+      (a.number?'<button class="copy" data-copy="'+esc(a.key)+'">'+(S.copied===a.key?ICON.check+"Copied":ICON.copy+"Copy")+'</button>':"")+'</div>';
+  }).join("");
+
+  html+='<p class="tiny muted">Copy the number of the option you want to pay with (the last one you copy is used on your ticket), send '+money(total())+' from your bank or Telebirr app, then upload the screenshot below.</p>';
+
+  if(active&&active.kind==="telebirr"&&active.qr){
+    html+='<div class="card center" style="padding:16px;margin-top:16px"><img src="'+esc(active.qr)+'" alt="Telebirr payment QR code" style="width:208px;height:208px;object-fit:contain;margin:0 auto;border-radius:12px" /></div>';
+  }
+
+  html+='<div class="box row" style="margin-top:16px"><span class="tiny muted">Serve time</span><span style="font-size:14px;font-weight:600;text-align:right">'+esc(schedLabel())+'</span></div>';
+
+  html+='<div style="margin-top:16px"><label style="display:block;font-size:14px;font-weight:600;margin-bottom:6px">Upload your payment screenshot</label>'+
+    '<input class="file" type="file" accept="image/*" id="proofInput" />'+
+    (S.proofUrl?'<img src="'+S.proofUrl+'" alt="Payment screenshot preview" style="margin-top:12px;max-height:220px;object-fit:contain;border:1px solid var(--cool);border-radius:12px" />':"")+'</div>';
+
+  html+='<button class="btn-lg grad" style="margin-top:16px" id="submitOrder"'+(!S.proof||S.submitting?" disabled":"")+'>'+(S.submitting?"Uploading…":"Submit Order &amp; Proof of Payment")+'</button>';
+
+  if(S.payError)html+='<p style="color:var(--brand);font-size:14px;margin-top:8px">'+esc(S.payError)+'</p>';
+
+  $("payBody").innerHTML=html;
+
+  $("proofInput").addEventListener("change",function(e){
+    var f=e.target.files&&e.target.files[0]?e.target.files[0]:null;
+    S.proof=f;
+    S.proofUrl=f?URL.createObjectURL(f):"";
+    renderPay();
+  });
+
+  $("submitOrder").addEventListener("click",submitOrder);
+}
+
+async function copyNum(acc){
+  try{
+    await navigator.clipboard.writeText(acc.number);
+  }catch(e){
+    var ta=document.createElement("textarea");
+    ta.value=acc.number;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+  }
+
+  S.copied=acc.key;
+  S.lastCopied=acc.key;
+  S.selected=acc.key;
+  renderPay();
+  toast(acc.label+" number copied");
+
+  setTimeout(function(){
+    S.copied="";
+    if($("payModal").classList.contains("open"))renderPay();
+  },1800);
+}
+
+async function submitOrder(){
+  if(!S.proof)return;
+
+  var payKey=S.lastCopied||S.selected;
+  var acc=S.accounts.filter(function(a){return a.key===payKey;})[0]||
+    S.accounts.filter(function(a){return a.key===S.selected;})[0];
+
+  S.submitting=true;
+  S.payError="";
+  renderPay();
+
+  try{
+    var ext=(S.proof.name.split(".").pop()||"png").toLowerCase();
+    var path="proof-"+Date.now()+"-"+Math.random().toString(36).slice(2,8)+"."+ext;
+
+    var up=await fetch(SUPABASE_URL+"/storage/v1/object/payment-proofs/"+path,{
+      method:"POST",
+      headers:Object.assign({},H,{"Content-Type":S.proof.type||"application/octet-stream"}),
+      body:S.proof
+    });
+
+    if(!up.ok)throw new Error(await describeFailure(up,"Could not upload your payment screenshot"));
+
+    var publicUrl=SUPABASE_URL+"/storage/v1/object/public/payment-proofs/"+path;
+    var payload={
+      table_number:S.table||"Walk-in",
+      items:cartItems(),
+      total_amount:Number(total().toFixed(2)),
+      status:"pending_review",
+      payment_method:(acc?(acc.kind==="bank"?"bank:":"")+acc.label+(acc.number?" "+acc.number:""):"telebirr"),
+      payment_screenshot_url:publicUrl,
+      scheduled_date:S.date,
+      scheduled_time:S.time,
+      scheduled_label:schedLabel()
+    };
+
+    var ins=await fetch(SUPABASE_URL+"/rest/v1/orders",{
+      method:"POST",
+      headers:Object.assign({},H,{"Content-Type":"application/json",Prefer:"return=representation"}),
+      body:JSON.stringify(payload)
+    });
+
+    if(!ins.ok)throw new Error(await describeFailure(ins,"Could not submit your order"));
+
+    var row=(await ins.json())[0]||{};
+    S.submitting=false;
+    S.receipt=Object.assign({},payload,{
+      paidTo:acc?acc.label+(acc.number?" — "+acc.number:""):"Telebirr",
+      paidName:acc?acc.label:"Telebirr",
+      paidNumber:acc&&acc.number?acc.number:"",
+      paidHolder:acc&&acc.holder?acc.holder:"",
+      id:row.id||"—",
+      created_at:row.created_at||new Date().toISOString()
+    });
+
+    openModal("payModal",false);
+    showReceipt();
+    toast("Order placed — thank you!");
+  }catch(e){
+    S.submitting=false;
+    S.payError=(e&&e.message)||"Network request failed while submitting your order.";
+    renderPay();
+    toast("Order could not be submitted","error");
+  }
+}
+
+/* ---------- receipt ---------- */
+function showReceipt(){
+  var r=S.receipt;
+  if(!r)return;
+
+  $("rcSched").textContent=r.scheduled_label?"Serve time: "+r.scheduled_label:"";
+  $("rcPaid").textContent="Paid: "+(r.paidName||"—")+(r.paidNumber?" — "+r.paidNumber:"");
+
+  var c=$("rcCanvas"),g=c.getContext("2d");
+  g.fillStyle="#FFFFFF";
+  g.fillRect(0,0,c.width,c.height);
+
+  var grad=g.createLinearGradient(0,0,c.width,0);
+  grad.addColorStop(0,"#E43D30");
+  grad.addColorStop(.5,"#F15A3C");
+  grad.addColorStop(1,"#F97316");
+  g.fillStyle=grad;
+  g.fillRect(0,0,c.width,120);
+
+  g.fillStyle="#FFF";
+  g.font="800 40px 'Plus Jakarta Sans', sans-serif";
+  g.fillText("HAWI",40,60);
+  g.font="500 18px Inter, sans-serif";
+  g.fillText("Ethiopian Kitchen — Order Receipt",40,92);
+
+  var y=175;
+  g.fillStyle="#777";
+  g.font="500 16px Inter, sans-serif";
+  g.fillText("Order ID",40,y);
+  g.fillText("Table",40,y+34);
+  g.fillText("Placed",40,y+68);
+  g.fillText("Serve time",40,y+102);
+
+  g.fillStyle="#111";
+  g.font="600 16px Inter, sans-serif";
+  g.fillText(String(r.id).slice(0,28),190,y);
+  g.fillText(String(r.table_number),190,y+34);
+  g.fillText(new Date(r.created_at).toLocaleString(),190,y+68);
+
+  g.fillStyle="#E43D30";
+  g.font="700 16px Inter, sans-serif";
+  g.fillText(String(r.scheduled_label||"As soon as possible").slice(0,34),190,y+102);
+
+  y+=150;
+  g.strokeStyle="#E5E7EB";
+  g.beginPath();
+  g.moveTo(40,y);
+  g.lineTo(600,y);
+  g.stroke();
+
+  y+=36;
+  g.fillStyle="#444";
+  g.font="700 18px 'Plus Jakarta Sans', sans-serif";
+  g.fillText("Items",40,y);
+
+  y+=30;
+  g.font="500 16px Inter, sans-serif";
+  r.items.forEach(function(i){
+    g.fillStyle="#111";
+    g.fillText(i.qty+" x "+String(i.name).slice(0,30),40,y);
+    g.fillStyle="#444";
+    var t=(i.price*i.qty).toFixed(2)+" ETB";
+    g.fillText(t,600-g.measureText(t).width,y);
+    y+=30;
+  });
+
+  y+=12;
+  g.strokeStyle="#E5E7EB";
+  g.beginPath();
+  g.moveTo(40,y);
+  g.lineTo(600,y);
+  g.stroke();
+
+  y+=44;
+  g.fillStyle="#111";
+  g.font="800 24px 'Plus Jakarta Sans', sans-serif";
+  g.fillText("Total",40,y);
+
+  var tt=Number(r.total_amount).toFixed(2)+" ETB";
+  g.fillStyle="#E43D30";
+  g.fillText(tt,600-g.measureText(tt).width,y);
+
+  y+=48;
+  g.fillStyle="#777";
+  g.font="500 15px Inter, sans-serif";
+  g.fillText("Paid with",40,y);
+
+  g.fillStyle="#111";
+  g.font="700 17px 'Plus Jakarta Sans', sans-serif";
+  g.fillText(String(r.paidName||"—").slice(0,34),150,y);
+
+  if(r.paidNumber){
+    y+=26;
+    g.fillStyle="#777";
+    g.font="500 15px Inter, sans-serif";
+    g.fillText("Account",40,y);
+    g.fillStyle="#111";
+    g.font="700 17px Inter, sans-serif";
+    g.fillText(String(r.paidNumber).slice(0,30),150,y);
+  }
+
+  if(r.paidHolder){
+    y+=24;
+    g.fillStyle="#777";
+    g.font="500 14px Inter, sans-serif";
+    g.fillText("Name: "+String(r.paidHolder).slice(0,34),150,y);
+  }
+
+  y+=30;
+  g.fillStyle="#777";
+  g.font="500 15px Inter, sans-serif";
+  g.fillText("Payment awaiting confirmation.",40,y);
+  g.fillStyle="#111";
+  g.font="700 15px Inter, sans-serif";
+  g.fillText("Keep this ticket — show it to our staff on arrival.",40,y+26);
+  g.fillStyle="#777";
+  g.font="500 15px Inter, sans-serif";
+  g.fillText("Thank you for dining with HAWI!",40,y+52);
+
+  openModal("receiptModal",true);
+}
+
+function downloadReceipt(){
+  var c=$("rcCanvas");
+  var a=document.createElement("a");
+  a.href=c.toDataURL("image/png");
+  a.download="hawi-receipt-"+String((S.receipt&&S.receipt.id)||Date.now()).slice(0,8)+".png";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  S.cart={};
+  S.receipt=null;
+  S.proof=null;
+  S.proofUrl="";
+  S.date=null;
+  S.time=null;
+
+  openModal("receiptModal",false);
+  renderMenu();
+  renderCart();
+  toast("Receipt saved — cart cleared");
+}
+
+/* ---------- search UI ---------- */
+function toggleSearch(force){
+  var bar=$("searchBar");
+  var open=force!=null?force:!bar.classList.contains("open");
+  bar.classList.toggle("open",open);
+  $("searchToggle").classList.toggle("on",open);
+
+  if(open)$("searchInput").focus();
+  else{
+    S.query="";
+    $("searchInput").value="";
+    renderMenu();
+  }
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click",function(e){
+  var t=e.target.closest("button");
+  if(!t)return;
+
+  if(t.dataset.cat){S.filter=t.dataset.cat;renderMenu();return;}
+  if(t.dataset.add){changeQty(t.dataset.add,1,true);return;}
+  if(t.dataset.inc){changeQty(t.dataset.inc,1);return;}
+  if(t.dataset.dec){changeQty(t.dataset.dec,-1);return;}
+  if(t.dataset.day){S.date=t.dataset.day;showTimeErr("");renderCart();return;}
+  if(t.dataset.time){S.time=t.dataset.time;showTimeErr("");renderCart();return;}
+  if(t.dataset.sel){S.selected=t.dataset.sel;renderPay();return;}
+
+  if(t.dataset.copy){
+    var a=S.accounts.filter(function(x){return x.key===t.dataset.copy;})[0];
+    if(a)copyNum(a);
+    return;
+  }
+});
+
+$("openCart").addEventListener("click",function(){openCart(true);});
+$("closeCart").addEventListener("click",function(){openCart(false);});
+$("overlay").addEventListener("click",function(){openCart(false);});
+$("closePay").addEventListener("click",function(){openModal("payModal",false);});
+$("placeOrder").addEventListener("click",openPayment);
+$("dlReceipt").addEventListener("click",downloadReceipt);
+$("setTime").addEventListener("click",applyManualTime);
+$("searchToggle").addEventListener("click",function(){toggleSearch();});
+$("clearSearch").addEventListener("click",function(){toggleSearch(false);});
+$("searchInput").addEventListener("input",function(e){S.query=e.target.value;renderMenu();});
+$("searchInput").addEventListener("keydown",function(e){if(e.key==="Escape")toggleSearch(false);});
+
+$("amBtn").addEventListener("click",function(){
+  S.mer="AM";
+  $("amBtn").classList.add("on");
+  $("pmBtn").classList.remove("on");
+});
+
+$("pmBtn").addEventListener("click",function(){
+  S.mer="PM";
+  $("pmBtn").classList.add("on");
+  $("amBtn").classList.remove("on");
+});
+
+["mh","mm"].forEach(function(id){
+  $(id).addEventListener("input",function(e){
+    e.target.value=e.target.value.replace(/\D/g,"").slice(0,2);
+  });
+});
+
+S.mer=now().getHours()>=12?"PM":"AM";
+if(S.mer==="PM"){
+  $("pmBtn").classList.add("on");
+  $("amBtn").classList.remove("on");
+}
+
+S.table=new URLSearchParams(window.location.search).get("table")||"";
+renderCart();
+loadMenu();
+
+setInterval(function(){
+  if(isToday()&&S.time&&S.time!=="ASAP"){
+    var mins=fromHHMM(S.time);
+    if(mins!=null&&mins<=nowMins())S.time=null;
+  }
+  renderTimes();
+},30000);
+
+})();
+</script>
+
+<!-- EDDY TECH DEVELOPER ATTRIBUTION
+     The markup is at the bottom of the HTML, but the CSS above
+     pins this wrapper to the visible screen while the page scrolls. -->
+<footer class="mx-auto w-full max-w-6xl px-4">
+  <div class="footer-attribution-row">
+    <div class="developer-attribution">
+      <span>Developed by
+        <strong class="brand-script">Three Creatives</strong>
+        <span class="brand-divider">|</span>
+        <strong class="brand-tech">EDDY TECH</strong>
+      </span>
+      <div class="eddy-mark" aria-label="EDDY TECH animated verification symbol" role="img">
+        <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path class="em-outline" d="M43 69 H35 C24 69 19 61 22 51 C24 43 31 39 39 40 C42 26 54 19 66 23 C75 25 80 32 81 40 C91 41 97 49 95 58 C94 65 88 69 80 69 H76" fill="none" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          <g class="em-power" fill="none" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M59 32 V54"/>
+            <path d="M49 45 A15 15 0 1 0 69 45"/>
+          </g>
+          <path class="em-shield" d="M60 17 L91 29 V53 C91 72 77 89 60 100 C43 89 29 72 29 53 V29 Z" fill="none" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path class="em-check" d="M43 57 L55 69 L78 44" fill="none" stroke="#111111" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
